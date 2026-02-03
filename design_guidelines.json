@@ -1,0 +1,193 @@
+{
+  "identity": {
+    "name": "E1",
+    "role": "Creative Designer",
+    "mission": "Create a top 1% e-commerce experience for Pulgax 3D Store that blends technical precision with approachable retail design."
+  },
+  "brand": {
+    "name": "Pulgax 3D Store",
+    "core_values": ["Innovation", "Precision", "Personalization", "Approachability"],
+    "emotional_tone": "Modern, Professional, Tech-inspired, Friendly"
+  },
+  "theme": {
+    "default": "light",
+    "supports_dark_mode": true,
+    "strategy": "Light mode is the primary interface for trust and clarity. Dark mode is a secondary 'Pro' mode for power users."
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "name": "Pulgax Deep Blue",
+        "hex": "#0F172A",
+        "tailwind": "bg-slate-900",
+        "usage": "Primary Brand Color, Headings, Main Navigation, Footer"
+      },
+      "accent": {
+        "name": "Electric Blue",
+        "hex": "#2563EB",
+        "tailwind": "bg-blue-600",
+        "usage": "Primary Buttons, CTAs, Active States, Links"
+      },
+      "secondary": {
+        "name": "Slate Grey",
+        "hex": "#64748B",
+        "tailwind": "bg-slate-500",
+        "usage": "Subheadings, Secondary Text, Borders"
+      },
+      "background": {
+        "light": "#FFFFFF",
+        "dark": "#020617",
+        "usage": "Page Backgrounds"
+      },
+      "surface": {
+        "light": "#F8FAFC",
+        "dark": "#0F172A",
+        "usage": "Cards, Section Backgrounds, Inputs"
+      },
+      "success": {
+        "hex": "#10B981",
+        "usage": "Stock Status, Success Messages"
+      },
+      "warning": {
+        "hex": "#F59E0B",
+        "usage": "Low Stock, Alerts"
+      },
+      "error": {
+        "hex": "#EF4444",
+        "usage": "Error States, Delete Actions"
+      }
+    },
+    "gradients": {
+      "hero": "bg-gradient-to-r from-slate-900 to-slate-800",
+      "accent_glow": "bg-gradient-to-r from-blue-600 to-indigo-600"
+    }
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Outfit, sans-serif",
+      "body": "Plus Jakarta Sans, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-4xl md:text-6xl font-bold tracking-tight",
+      "h2": "text-3xl md:text-4xl font-semibold tracking-tight",
+      "h3": "text-2xl md:text-3xl font-semibold",
+      "body_lg": "text-lg leading-relaxed",
+      "body_base": "text-base leading-relaxed",
+      "caption": "text-sm text-muted-foreground"
+    },
+    "weights": {
+      "normal": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    }
+  },
+  "layout": {
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "grid_system": {
+      "marketing": "grid grid-cols-1 md:grid-cols-12 gap-8",
+      "products": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+      "dashboard": "grid grid-cols-1 md:grid-cols-4 gap-6"
+    },
+    "spacing": {
+      "section_padding": "py-16 md:py-24",
+      "component_padding": "p-6 md:p-8"
+    },
+    "radius": {
+      "default": "rounded-xl",
+      "button": "rounded-lg",
+      "card": "rounded-xl"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all duration-300",
+      "secondary": "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-300",
+      "ghost": "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+    },
+    "cards": {
+      "product": "group relative bg-white border border-slate-100 rounded-xl overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300",
+      "feature": "bg-slate-50 p-8 rounded-2xl border border-slate-100 hover:border-blue-200 transition-colors"
+    },
+    "inputs": {
+      "default": "bg-white border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "soft": "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+      "hover": "shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
+    },
+    "glassmorphism": {
+      "nav": "backdrop-blur-xl bg-white/80 border-b border-slate-200/50 supports-[backdrop-filter]:bg-white/60"
+    },
+    "textures": {
+      "noise": "opacity-[0.03] pointer-events-none fixed inset-0 z-50 mix-blend-overlay"
+    }
+  },
+  "image_urls": {
+    "hero": {
+      "url": "https://images.unsplash.com/photo-1736667117808-d8e33a51cd7f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwxfHwzZCUyMHByaW50ZXIlMjBwcmludGluZyUyMGNsb3NlJTIwdXAlMjB0ZWNobm9sb2d5fGVufDB8fHx8MTc3MDEzNTY4MHww&ixlib=rb-4.1.0&q=85",
+      "alt": "Close up of 3D printer nozzle printing orange filament",
+      "category": "hero_background"
+    },
+    "about": {
+      "url": "https://images.unsplash.com/photo-1694701503673-379c9e0d887e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjAzZCUyMHByaW50aW5nJTIwd29ya3Nob3AlMjBjbGVhbnxlbnwwfHx8fDE3NzAxMzU2ODV8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Modern clean 3D printing workshop",
+      "category": "about_section"
+    },
+    "products": [
+      {
+        "url": "https://images.unsplash.com/photo-1690860938359-60128b9b9a2d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxjb2xvcmZ1bCUyMDNkJTIwcHJpbnRlZCUyMGdlb21ldHJpYyUyMHZhc2VzfGVufDB8fHx8MTc3MDEzNTY5MHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Colorful 3D printed geometric vases",
+        "category": "product_showcase"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1767498051839-c7fba864e657?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwzfHwzZCUyMHByaW50ZXIlMjBwcmludGluZyUyMGNsb3NlJTIwdXAlMjB0ZWNobm9sb2d5fGVufDB8fHx8MTc3MDEzNTY4MHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Textured vase style container",
+        "category": "product_detail"
+      }
+    ],
+    "process": {
+      "url": "https://images.unsplash.com/photo-1539261840634-2966927034c1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjAzZCUyMHByaW50aW5nJTIwd29ya3Nob3AlMjBjbGVhbnxlbnwwfHx8fDE3NzAxMzU2ODV8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Drone parts being 3D printed",
+      "category": "process_explanation"
+    }
+  },
+  "3d_strategy": {
+    "library": "Spline (via @splinetool/react-spline) or React Three Fiber",
+    "usage": "Use a simple, interactive 3D element in the Hero section (e.g., a rotating 3D printed object) if performance allows. Otherwise, use high-quality macro photography with parallax scroll.",
+    "fallback": "Use the 'hero_background' image with a glassmorphism overlay."
+  },
+  "instructions_to_main_agent": [
+    "Implement the 'Outfit' font for headings and 'Plus Jakarta Sans' for body text immediately.",
+    "Set up the Tailwind config to use the specific 'Pulgax Deep Blue' (#0F172A) as the primary color.",
+    "Create a 'Layout' component that handles the bilingual toggle (PT/EN) in the top navigation.",
+    "Ensure the 'ProductCard' component supports color swatches that update the image preview.",
+    "Build the 'AdminDashboard' with a dense, data-heavy layout using the 'dashboard' grid system.",
+    "Use 'sonner' for all toast notifications (e.g., 'Added to cart', 'Order updated').",
+    "Implement the 'Bento' grid for the 'Services' section on the landing page.",
+    "Ensure all forms (Contact, Checkout) use Shadcn form components with Zod validation."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Create new components that match the style and conventions of existing components when needed.",
+    "Examine existing components to understand the project's component patterns before creating new ones.",
+    "Components MUST use named exports (export const ComponentName = ...).",
+    "Pages MUST use default exports (export default function PageName() {...}).",
+    "Use 'sonner' for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx."
+  ]
+}
