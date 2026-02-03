@@ -14,374 +14,185 @@ import { Plus, Pencil, Trash2, X } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+const initialForm = {
+  name_pt: '', name_en: '', description_pt: '', description_en: '',
+  base_price: 0, category_id: '', colors: [], sizes: [],
+  customization_options: [], images: [], featured: false, active: true
+};
+
 export function ProductsManager({ products, categories, token, onUpdate }) {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [form, setForm] = useState(getEmptyForm());
-  const [newColor, setNewColor] = useState({ name_pt: '', name_en: '', hex_code: '#000000', image_url: '' });
-  const [newSize, setNewSize] = useState({ name: '', price_adjustment: 0 });
-  const [newCustomization, setNewCustomization] = useState({ name_pt: '', name_en: '', type: 'text', required: false });
-  const [newImage, setNewImage] = useState('');
+  const [form, setForm] = useState({...initialForm});
+  const [colorInput, setColorInput] = useState({ name_pt: '', name_en: '', hex_code: '#000000', image_url: '' });
+  const [sizeInput, setSizeInput] = useState({ name: '', price_adjustment: 0 });
+  const [customInput, setCustomInput] = useState({ name_pt: '', name_en: '', type: 'text', required: false });
+  const [imageInput, setImageInput] = useState('');
 
-  function getEmptyForm() {
-    return {
-      name_pt: '', name_en: '', description_pt: '', description_en: '',
-      base_price: 0, category_id: '', colors: [], sizes: [],
-      customization_options: [], images: [], featured: false, active: true
-    };
-  }
-
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
     try {
       const headers = { Authorization: `Bearer ${token}` };
       if (editingProduct) {
         await axios.put(`${API}/products/${editingProduct.id}`, form, { headers });
-        toast.success(language === 'pt' ? 'Produto atualizado!' : 'Product updated!');
+        toast.success(language === 'pt' ? 'Atualizado!' : 'Updated!');
       } else {
         await axios.post(`${API}/products`, form, { headers });
-        toast.success(language === 'pt' ? 'Produto criado!' : 'Product created!');
+        toast.success(language === 'pt' ? 'Criado!' : 'Created!');
       }
-      setIsOpen(false);
-      setEditingProduct(null);
-      setForm(getEmptyForm());
+      closeDialog();
       onUpdate();
-    } catch (error) {
-      toast.error(language === 'pt' ? 'Erro ao guardar produto' : 'Error saving product');
+    } catch (err) {
+      toast.error(language === 'pt' ? 'Erro' : 'Error');
     }
-  };
+  }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm(language === 'pt' ? 'Eliminar este produto?' : 'Delete this product?')) return;
+  async function handleDelete(id) {
+    if (!window.confirm(language === 'pt' ? 'Eliminar?' : 'Delete?')) return;
     try {
       await axios.delete(`${API}/products/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success(language === 'pt' ? 'Produto eliminado!' : 'Product deleted!');
+      toast.success(language === 'pt' ? 'Eliminado!' : 'Deleted!');
       onUpdate();
-    } catch (error) {
-      toast.error(language === 'pt' ? 'Erro ao eliminar produto' : 'Error deleting product');
+    } catch (err) {
+      toast.error(language === 'pt' ? 'Erro' : 'Error');
     }
-  };
+  }
 
-  const openEdit = (product) => {
+  function openEdit(product) {
     setEditingProduct(product);
     setForm({
-      name_pt: product.name_pt, name_en: product.name_en,
-      description_pt: product.description_pt, description_en: product.description_en,
-      base_price: product.base_price, category_id: product.category_id,
+      name_pt: product.name_pt || '', name_en: product.name_en || '',
+      description_pt: product.description_pt || '', description_en: product.description_en || '',
+      base_price: product.base_price || 0, category_id: product.category_id || '',
       colors: product.colors || [], sizes: product.sizes || [],
       customization_options: product.customization_options || [],
-      images: product.images || [], featured: product.featured, active: product.active
+      images: product.images || [], featured: product.featured || false, active: product.active !== false
     });
     setIsOpen(true);
-  };
+  }
 
-  const openNew = () => {
+  function closeDialog() {
+    setIsOpen(false);
     setEditingProduct(null);
-    setForm(getEmptyForm());
-    setIsOpen(true);
-  };
+    setForm({...initialForm});
+  }
 
-  const updateForm = (key, value) => {
-    setForm(prev => ({ ...prev, [key]: value }));
-  };
+  function addColor() {
+    if (!colorInput.name_pt) return;
+    setForm(f => ({...f, colors: [...f.colors, {...colorInput}]}));
+    setColorInput({ name_pt: '', name_en: '', hex_code: '#000000', image_url: '' });
+  }
 
-  const addColor = () => {
-    if (newColor.name_pt && newColor.hex_code) {
-      updateForm('colors', [...form.colors, { ...newColor }]);
-      setNewColor({ name_pt: '', name_en: '', hex_code: '#000000', image_url: '' });
-    }
-  };
+  function addSize() {
+    if (!sizeInput.name) return;
+    setForm(f => ({...f, sizes: [...f.sizes, {...sizeInput}]}));
+    setSizeInput({ name: '', price_adjustment: 0 });
+  }
 
-  const addSize = () => {
-    if (newSize.name) {
-      updateForm('sizes', [...form.sizes, { ...newSize }]);
-      setNewSize({ name: '', price_adjustment: 0 });
-    }
-  };
+  function addCustom() {
+    if (!customInput.name_pt) return;
+    setForm(f => ({...f, customization_options: [...f.customization_options, {...customInput}]}));
+    setCustomInput({ name_pt: '', name_en: '', type: 'text', required: false });
+  }
 
-  const addCustomization = () => {
-    if (newCustomization.name_pt) {
-      updateForm('customization_options', [...form.customization_options, { ...newCustomization }]);
-      setNewCustomization({ name_pt: '', name_en: '', type: 'text', required: false });
-    }
-  };
+  function addImg() {
+    if (!imageInput) return;
+    setForm(f => ({...f, images: [...f.images, imageInput]}));
+    setImageInput('');
+  }
 
-  const addImage = () => {
-    if (newImage) {
-      updateForm('images', [...form.images, newImage]);
-      setNewImage('');
-    }
-  };
+  function removeFromArray(key, idx) {
+    setForm(f => ({...f, [key]: f[key].filter((_, i) => i !== idx)}));
+  }
 
-  const removeItem = (key, index) => {
-    updateForm(key, form[key].filter((_, i) => i !== index));
+  const catName = (id) => {
+    const c = categories.find(x => x.id === id);
+    return c ? (language === 'pt' ? c.name_pt : c.name_en) : '-';
   };
 
   return (
     <div className="space-y-6" data-testid="products-tab">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {t('admin.dashboard.products')}
-        </h2>
-        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) { setEditingProduct(null); setForm(getEmptyForm()); } }}>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('admin.dashboard.products')}</h2>
+        <Dialog open={isOpen} onOpenChange={v => { if (!v) closeDialog(); else setIsOpen(true); }}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={openNew} data-testid="add-product-btn">
-              <Plus className="w-4 h-4 mr-2" />
-              {t('admin.products.add')}
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => { setEditingProduct(null); setForm({...initialForm}); setIsOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" />{t('admin.products.add')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingProduct ? t('admin.products.edit') : t('admin.products.add')}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <DialogHeader><DialogTitle>{editingProduct ? t('admin.products.edit') : t('admin.products.add')}</DialogTitle></DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('admin.products.name')} (PT) *</Label>
-                  <Input value={form.name_pt} onChange={(e) => updateForm('name_pt', e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('admin.products.name')} (EN) *</Label>
-                  <Input value={form.name_en} onChange={(e) => updateForm('name_en', e.target.value)} required />
-                </div>
+                <div><Label>Nome (PT) *</Label><Input value={form.name_pt} onChange={e => setForm(f => ({...f, name_pt: e.target.value}))} required /></div>
+                <div><Label>Name (EN) *</Label><Input value={form.name_en} onChange={e => setForm(f => ({...f, name_en: e.target.value}))} required /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('admin.products.description')} (PT) *</Label>
-                  <Textarea value={form.description_pt} onChange={(e) => updateForm('description_pt', e.target.value)} rows={3} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('admin.products.description')} (EN) *</Label>
-                  <Textarea value={form.description_en} onChange={(e) => updateForm('description_en', e.target.value)} rows={3} required />
-                </div>
+                <div><Label>Descrição (PT) *</Label><Textarea value={form.description_pt} onChange={e => setForm(f => ({...f, description_pt: e.target.value}))} rows={2} required /></div>
+                <div><Label>Description (EN) *</Label><Textarea value={form.description_en} onChange={e => setForm(f => ({...f, description_en: e.target.value}))} rows={2} required /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('admin.products.price')} (€) *</Label>
-                  <Input type="number" step="0.01" min="0" value={form.base_price} onChange={(e) => updateForm('base_price', parseFloat(e.target.value) || 0)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('admin.products.category')} *</Label>
-                  <Select value={form.category_id} onValueChange={(v) => updateForm('category_id', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={language === 'pt' ? 'Selecionar' : 'Select'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {language === 'pt' ? cat.name_pt : cat.name_en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                <div><Label>Preço (€) *</Label><Input type="number" step="0.01" value={form.base_price} onChange={e => setForm(f => ({...f, base_price: parseFloat(e.target.value) || 0}))} required /></div>
+                <div><Label>Categoria *</Label>
+                  <Select value={form.category_id} onValueChange={v => setForm(f => ({...f, category_id: v}))}>
+                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                    <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{language === 'pt' ? c.name_pt : c.name_en}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
-
+              
               {/* Colors */}
-              <div className="space-y-3">
-                <Label className="font-semibold">{t('admin.products.colors')}</Label>
-                <div className="flex flex-wrap gap-2">
-                  {form.colors.map((color, i) => (
-                    <ColorTag key={i} color={color} onRemove={() => removeItem('colors', i)} />
-                  ))}
-                </div>
-                <div className="grid grid-cols-5 gap-2">
-                  <Input placeholder="Nome (PT)" value={newColor.name_pt} onChange={(e) => setNewColor(prev => ({ ...prev, name_pt: e.target.value }))} />
-                  <Input placeholder="Name (EN)" value={newColor.name_en} onChange={(e) => setNewColor(prev => ({ ...prev, name_en: e.target.value }))} />
-                  <Input type="color" value={newColor.hex_code} onChange={(e) => setNewColor(prev => ({ ...prev, hex_code: e.target.value }))} className="h-10 p-1" />
-                  <Input placeholder="Image URL" value={newColor.image_url} onChange={(e) => setNewColor(prev => ({ ...prev, image_url: e.target.value }))} />
-                  <Button type="button" onClick={addColor} variant="outline">+</Button>
-                </div>
+              <div><Label className="font-semibold">Cores</Label>
+                <div className="flex flex-wrap gap-2 my-2">{form.colors.map((c, i) => <span key={i} className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm"><span className="w-3 h-3 rounded-full" style={{background: c.hex_code}}/>{c.name_pt}<button type="button" onClick={() => removeFromArray('colors', i)} className="text-red-500"><X className="w-3 h-3"/></button></span>)}</div>
+                <div className="flex gap-2"><Input placeholder="Nome PT" value={colorInput.name_pt} onChange={e => setColorInput(c => ({...c, name_pt: e.target.value}))} className="w-24"/><Input placeholder="EN" value={colorInput.name_en} onChange={e => setColorInput(c => ({...c, name_en: e.target.value}))} className="w-20"/><Input type="color" value={colorInput.hex_code} onChange={e => setColorInput(c => ({...c, hex_code: e.target.value}))} className="w-12 p-1"/><Input placeholder="Img URL" value={colorInput.image_url} onChange={e => setColorInput(c => ({...c, image_url: e.target.value}))} className="flex-1"/><Button type="button" onClick={addColor} variant="outline" size="sm">+</Button></div>
               </div>
-
+              
               {/* Sizes */}
-              <div className="space-y-3">
-                <Label className="font-semibold">{t('admin.products.sizes')}</Label>
-                <div className="flex flex-wrap gap-2">
-                  {form.sizes.map((size, i) => (
-                    <SizeTag key={i} size={size} onRemove={() => removeItem('sizes', i)} />
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Input placeholder="S, M, L..." value={newSize.name} onChange={(e) => setNewSize(prev => ({ ...prev, name: e.target.value }))} />
-                  <Input type="number" step="0.01" placeholder="+€0.00" value={newSize.price_adjustment} onChange={(e) => setNewSize(prev => ({ ...prev, price_adjustment: parseFloat(e.target.value) || 0 }))} />
-                  <Button type="button" onClick={addSize} variant="outline">+</Button>
-                </div>
+              <div><Label className="font-semibold">Tamanhos</Label>
+                <div className="flex flex-wrap gap-2 my-2">{form.sizes.map((s, i) => <span key={i} className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm">{s.name} +€{s.price_adjustment}<button type="button" onClick={() => removeFromArray('sizes', i)} className="text-red-500"><X className="w-3 h-3"/></button></span>)}</div>
+                <div className="flex gap-2"><Input placeholder="S,M,L" value={sizeInput.name} onChange={e => setSizeInput(s => ({...s, name: e.target.value}))} className="w-24"/><Input type="number" step="0.01" placeholder="+€" value={sizeInput.price_adjustment} onChange={e => setSizeInput(s => ({...s, price_adjustment: parseFloat(e.target.value) || 0}))} className="w-24"/><Button type="button" onClick={addSize} variant="outline" size="sm">+</Button></div>
               </div>
-
+              
               {/* Customizations */}
-              <div className="space-y-3">
-                <Label className="font-semibold">{t('admin.products.customizations')}</Label>
-                <div className="space-y-2">
-                  {form.customization_options.map((opt, i) => (
-                    <CustomTag key={i} opt={opt} onRemove={() => removeItem('customization_options', i)} />
-                  ))}
-                </div>
-                <div className="grid grid-cols-5 gap-2 items-center">
-                  <Input placeholder="Nome (PT)" value={newCustomization.name_pt} onChange={(e) => setNewCustomization(prev => ({ ...prev, name_pt: e.target.value }))} />
-                  <Input placeholder="Name (EN)" value={newCustomization.name_en} onChange={(e) => setNewCustomization(prev => ({ ...prev, name_en: e.target.value }))} />
-                  <Select value={newCustomization.type} onValueChange={(v) => setNewCustomization(prev => ({ ...prev, type: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">Text</SelectItem>
-                      <SelectItem value="number">Number</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-1">
-                    <Switch checked={newCustomization.required} onCheckedChange={(v) => setNewCustomization(prev => ({ ...prev, required: v }))} />
-                    <span className="text-xs">*</span>
-                  </div>
-                  <Button type="button" onClick={addCustomization} variant="outline">+</Button>
+              <div><Label className="font-semibold">Personalizações</Label>
+                <div className="space-y-1 my-2">{form.customization_options.map((o, i) => <div key={i} className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm">{o.name_pt} ({o.type}){o.required && '*'}<button type="button" onClick={() => removeFromArray('customization_options', i)} className="text-red-500 ml-auto"><X className="w-3 h-3"/></button></div>)}</div>
+                <div className="flex gap-2 items-center"><Input placeholder="Nome PT" value={customInput.name_pt} onChange={e => setCustomInput(c => ({...c, name_pt: e.target.value}))} className="w-24"/><Input placeholder="EN" value={customInput.name_en} onChange={e => setCustomInput(c => ({...c, name_en: e.target.value}))} className="w-20"/>
+                  <Select value={customInput.type} onValueChange={v => setCustomInput(c => ({...c, type: v}))}><SelectTrigger className="w-20"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="text">Text</SelectItem><SelectItem value="number">Num</SelectItem></SelectContent></Select>
+                  <Switch checked={customInput.required} onCheckedChange={v => setCustomInput(c => ({...c, required: v}))}/><span className="text-xs">Obrig.</span><Button type="button" onClick={addCustom} variant="outline" size="sm">+</Button>
                 </div>
               </div>
-
+              
               {/* Images */}
-              <div className="space-y-3">
-                <Label className="font-semibold">{t('admin.products.images')}</Label>
-                <div className="flex flex-wrap gap-2">
-                  {form.images.map((img, i) => (
-                    <ImageTag key={i} img={img} onRemove={() => removeItem('images', i)} />
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input placeholder="https://..." value={newImage} onChange={(e) => setNewImage(e.target.value)} className="flex-1" />
-                  <Button type="button" onClick={addImage} variant="outline">+</Button>
-                </div>
+              <div><Label className="font-semibold">Imagens</Label>
+                <div className="flex flex-wrap gap-2 my-2">{form.images.map((img, i) => <div key={i} className="relative w-16 h-16 rounded overflow-hidden group"><img src={img} alt="" className="w-full h-full object-cover"/><button type="button" onClick={() => removeFromArray('images', i)} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100"><X className="w-4 h-4 text-white"/></button></div>)}</div>
+                <div className="flex gap-2"><Input placeholder="https://..." value={imageInput} onChange={e => setImageInput(e.target.value)} className="flex-1"/><Button type="button" onClick={addImg} variant="outline" size="sm">+</Button></div>
               </div>
-
-              {/* Toggles */}
-              <div className="flex gap-6">
-                <div className="flex items-center gap-2">
-                  <Switch checked={form.featured} onCheckedChange={(v) => updateForm('featured', v)} />
-                  <Label>{t('admin.products.featured')}</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={form.active} onCheckedChange={(v) => updateForm('active', v)} />
-                  <Label>{t('admin.products.active')}</Label>
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                {t('common.save')}
-              </Button>
+              
+              <div className="flex gap-4"><Switch checked={form.featured} onCheckedChange={v => setForm(f => ({...f, featured: v}))}/><Label>Destaque</Label><Switch checked={form.active} onCheckedChange={v => setForm(f => ({...f, active: v}))}/><Label>Ativo</Label></div>
+              <Button type="submit" className="w-full bg-blue-600">{t('common.save')}</Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Products Table */}
-      <ProductsTable 
-        products={products} 
-        categories={categories} 
-        language={language} 
-        t={t}
-        onEdit={openEdit}
-        onDelete={handleDelete}
-      />
-    </div>
-  );
-}
-
-function ColorTag({ color, onRemove }) {
-  return (
-    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-lg">
-      <span className="w-4 h-4 rounded-full" style={{ backgroundColor: color.hex_code }} />
-      <span className="text-sm">{color.name_pt}</span>
-      <button type="button" onClick={onRemove} className="text-red-500"><X className="w-3 h-3" /></button>
-    </div>
-  );
-}
-
-function SizeTag({ size, onRemove }) {
-  return (
-    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-lg">
-      <span className="text-sm">{size.name} (+€{size.price_adjustment})</span>
-      <button type="button" onClick={onRemove} className="text-red-500"><X className="w-3 h-3" /></button>
-    </div>
-  );
-}
-
-function CustomTag({ opt, onRemove }) {
-  return (
-    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-lg">
-      <span className="text-sm">{opt.name_pt} ({opt.type}) {opt.required && '*'}</span>
-      <button type="button" onClick={onRemove} className="text-red-500 ml-auto"><X className="w-3 h-3" /></button>
-    </div>
-  );
-}
-
-function ImageTag({ img, onRemove }) {
-  return (
-    <div className="relative w-20 h-20 rounded-lg overflow-hidden group">
-      <img src={img} alt="" className="w-full h-full object-cover" />
-      <button type="button" onClick={onRemove} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100">
-        <X className="w-5 h-5 text-white" />
-      </button>
-    </div>
-  );
-}
-
-function ProductsTable({ products, categories, language, t, onEdit, onDelete }) {
-  const getCategoryName = (categoryId) => {
-    const category = categories.find(c => c.id === categoryId);
-    if (!category) return '-';
-    return language === 'pt' ? category.name_pt : category.name_en;
-  };
-
-  const getProductImage = (product) => {
-    if (product.images && product.images.length > 0) return product.images[0];
-    if (product.colors && product.colors.length > 0 && product.colors[0].image_url) return product.colors[0].image_url;
-    return null;
-  };
-
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
         <table className="w-full">
-          <thead className="bg-slate-50 dark:bg-slate-700">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">{t('admin.products.name')}</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">{t('admin.products.category')}</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">{t('admin.products.price')}</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
-              <th className="px-6 py-4 text-right"></th>
-            </tr>
-          </thead>
+          <thead className="bg-slate-50 dark:bg-slate-700"><tr>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Nome</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Categoria</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Preço</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
+            <th className="px-4 py-3"></th>
+          </tr></thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {products.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                  {language === 'pt' ? 'Nenhum produto' : 'No products'}
-                </td>
-              </tr>
-            ) : products.map((product) => (
-              <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    {getProductImage(product) && <img src={getProductImage(product)} alt="" className="w-12 h-12 rounded-lg object-cover" />}
-                    <p className="font-medium text-slate-900 dark:text-white">
-                      {language === 'pt' ? product.name_pt : product.name_en}
-                    </p>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-slate-500">{getCategoryName(product.category_id)}</td>
-                <td className="px-6 py-4 font-medium">€{product.base_price.toFixed(2)}</td>
-                <td className="px-6 py-4">
-                  <Badge className={product.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                    {product.active ? (language === 'pt' ? 'Ativo' : 'Active') : (language === 'pt' ? 'Inativo' : 'Inactive')}
-                  </Badge>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(product)}>
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-red-500" onClick={() => onDelete(product.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </td>
+            {products.length === 0 ? <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">{language === 'pt' ? 'Sem produtos' : 'No products'}</td></tr> : products.map(p => (
+              <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <td className="px-4 py-3"><div className="flex items-center gap-2">{(p.images && p.images[0]) && <img src={p.images[0]} alt="" className="w-10 h-10 rounded object-cover"/>}<span className="font-medium">{language === 'pt' ? p.name_pt : p.name_en}</span></div></td>
+                <td className="px-4 py-3 text-sm text-slate-500">{catName(p.category_id)}</td>
+                <td className="px-4 py-3 font-medium">€{p.base_price.toFixed(2)}</td>
+                <td className="px-4 py-3"><Badge className={p.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>{p.active ? 'Ativo' : 'Inativo'}</Badge></td>
+                <td className="px-4 py-3 text-right"><Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="w-4 h-4"/></Button><Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4"/></Button></td>
               </tr>
             ))}
           </tbody>
