@@ -9,15 +9,21 @@ import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { 
-  ChevronLeft, 
-  Minus, 
-  Plus, 
-  ShoppingCart,
-  Check
-} from 'lucide-react';
+import { ChevronLeft, Minus, Plus, ShoppingCart, Check } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+// Helper function to check if color is light
+const isLightColor = (hex) => {
+  if (!hex || hex.length < 7) return false;
+  const c = hex.substring(1);
+  const rgb = parseInt(c, 16);
+  const r = (rgb >> 16) & 0xff;
+  const g = (rgb >> 8) & 0xff;
+  const b = (rgb >> 0) & 0xff;
+  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luma > 128;
+};
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -37,19 +43,22 @@ export default function ProductDetailPage() {
     const fetchProduct = async () => {
       try {
         const response = await axios.get(`${API}/products/${id}`);
-        setProduct(response.data);
-        if (response.data.colors?.length > 0) {
-          setSelectedColor(response.data.colors[0]);
+        const data = response.data;
+        setProduct(data);
+        if (data.colors && data.colors.length > 0) {
+          setSelectedColor(data.colors[0]);
         }
-        if (response.data.sizes?.length > 0) {
-          setSelectedSize(response.data.sizes[0]);
+        if (data.sizes && data.sizes.length > 0) {
+          setSelectedSize(data.sizes[0]);
         }
         // Initialize customizations
-        const initialCustomizations = {};
-        response.data.customization_options?.forEach(opt => {
-          initialCustomizations[opt.name_pt] = '';
-        });
-        setCustomizations(initialCustomizations);
+        const initCustom = {};
+        if (data.customization_options) {
+          data.customization_options.forEach(opt => {
+            initCustom[opt.name_pt] = '';
+          });
+        }
+        setCustomizations(initCustom);
       } catch (error) {
         console.error('Error fetching product:', error);
         navigate('/products');
@@ -63,19 +72,22 @@ export default function ProductDetailPage() {
   const handleColorSelect = (color, index) => {
     setSelectedColor(color);
     if (color.image_url) {
-      setCurrentImageIndex(index);
+      const imgCount = product.images ? product.images.length : 0;
+      setCurrentImageIndex(imgCount + index);
     }
   };
 
   const handleAddToCart = () => {
     // Validate required customizations
-    for (const opt of product.customization_options || []) {
+    const opts = product.customization_options || [];
+    for (let i = 0; i < opts.length; i++) {
+      const opt = opts[i];
       const key = opt.name_pt;
       if (opt.required && !customizations[key]) {
-        toast.error(language === 'pt' 
+        const msg = language === 'pt' 
           ? `Por favor, preencha: ${opt.name_pt}` 
-          : `Please fill: ${opt.name_en}`
-        );
+          : `Please fill: ${opt.name_en}`;
+        toast.error(msg);
         return;
       }
     }
@@ -85,7 +97,7 @@ export default function ProductDetailPage() {
       name_pt: product.name_pt,
       name_en: product.name_en,
       price: product.base_price,
-      image: selectedColor?.image_url || product.images?.[0] || '',
+      image: selectedColor?.image_url || (product.images && product.images[0]) || '',
       quantity,
       selected_color: selectedColor?.name_pt || null,
       selected_color_hex: selectedColor?.hex_code || null,
@@ -113,15 +125,18 @@ export default function ProductDetailPage() {
   const name = language === 'pt' ? product.name_pt : product.name_en;
   const description = language === 'pt' ? product.description_pt : product.description_en;
   
-  // Get all images including color images
-  const allImages = [
-    ...product.images,
-    ...product.colors.map(c => c.image_url).filter(Boolean)
-  ].filter((v, i, a) => a.indexOf(v) === i);
+  // Build all images
+  const productImages = product.images || [];
+  const colorImages = (product.colors || []).map(c => c.image_url).filter(Boolean);
+  const allImages = [...productImages, ...colorImages].filter((v, i, a) => a.indexOf(v) === i);
   
   const currentImage = allImages[currentImageIndex] || 'https://images.unsplash.com/photo-1690860938359-60128b9b9a2d?w=800';
-  
-  const finalPrice = product.base_price + (selectedSize?.price_adjustment || 0);
+  const sizeAdjust = selectedSize?.price_adjustment || 0;
+  const finalPrice = product.base_price + sizeAdjust;
+
+  const productColors = product.colors || [];
+  const productSizes = product.sizes || [];
+  const productCustomOpts = product.customization_options || [];
 
   return (
     <Layout>
@@ -189,7 +204,7 @@ export default function ProductDetailPage() {
                 <span className="text-3xl font-bold text-slate-900 dark:text-white" data-testid="product-price">
                   €{finalPrice.toFixed(2)}
                 </span>
-                {selectedSize?.price_adjustment > 0 && (
+                {sizeAdjust > 0 && (
                   <span className="text-sm text-slate-500">
                     ({t('common.from')} €{product.base_price.toFixed(2)})
                   </span>
@@ -197,16 +212,16 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Colors */}
-              {product.colors?.length > 0 && (
+              {productColors.length > 0 && (
                 <div className="space-y-3">
                   <Label className="text-slate-900 dark:text-white font-medium">
                     {t('products.color')}: {selectedColor && (language === 'pt' ? selectedColor.name_pt : selectedColor.name_en)}
                   </Label>
                   <div className="flex flex-wrap gap-3">
-                    {product.colors.map((color, index) => (
+                    {productColors.map((color, index) => (
                       <button
                         key={index}
-                        onClick={() => handleColorSelect(color, product.images.length + index)}
+                        onClick={() => handleColorSelect(color, index)}
                         className={`relative w-10 h-10 rounded-full border-2 transition-all ${
                           selectedColor?.hex_code === color.hex_code
                             ? 'border-blue-600 scale-110'
@@ -228,13 +243,13 @@ export default function ProductDetailPage() {
               )}
 
               {/* Sizes */}
-              {product.sizes?.length > 0 && (
+              {productSizes.length > 0 && (
                 <div className="space-y-3">
                   <Label className="text-slate-900 dark:text-white font-medium">
                     {t('products.size')}
                   </Label>
                   <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((size, index) => (
+                    {productSizes.map((size, index) => (
                       <button
                         key={index}
                         onClick={() => setSelectedSize(size)}
@@ -258,12 +273,12 @@ export default function ProductDetailPage() {
               )}
 
               {/* Customizations */}
-              {product.customization_options?.length > 0 && (
+              {productCustomOpts.length > 0 && (
                 <div className="space-y-4">
                   <Label className="text-slate-900 dark:text-white font-medium">
                     {t('products.customization')}
                   </Label>
-                  {product.customization_options.map((opt, index) => (
+                  {productCustomOpts.map((opt, index) => (
                     <div key={index} className="space-y-2">
                       <Label className="text-sm">
                         {language === 'pt' ? opt.name_pt : opt.name_en}
@@ -330,15 +345,4 @@ export default function ProductDetailPage() {
       </div>
     </Layout>
   );
-}
-
-// Helper function to check if color is light
-function isLightColor(hex) {
-  const c = hex.substring(1);
-  const rgb = parseInt(c, 16);
-  const r = (rgb >> 16) & 0xff;
-  const g = (rgb >> 8) & 0xff;
-  const b = (rgb >> 0) & 0xff;
-  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luma > 128;
 }
