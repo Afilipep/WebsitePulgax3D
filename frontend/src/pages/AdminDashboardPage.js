@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
@@ -15,22 +15,9 @@ import { Toaster } from '../components/ui/sonner';
 import { toast } from 'sonner';
 import axios from 'axios';
 import {
-  LayoutDashboard,
-  Package,
-  FolderOpen,
-  ShoppingCart,
-  MessageSquare,
-  LogOut,
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  Printer,
-  Moon,
-  Sun,
-  Globe
+  LayoutDashboard, Package, FolderOpen, ShoppingCart, MessageSquare,
+  LogOut, Plus, Pencil, Trash2, X, Printer, Moon, Sun, Globe
 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -48,35 +35,21 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
 
-  // Auth check
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/admin');
-    }
-  }, [isAuthenticated, navigate]);
-
-  // Fetch data
-  useEffect(() => {
-    if (token) {
-      fetchAllData();
-    }
-  }, [token]);
-
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [statsRes, categoriesRes, productsRes, ordersRes, messagesRes] = await Promise.all([
+      const results = await Promise.all([
         axios.get(`${API}/stats`, { headers }),
         axios.get(`${API}/categories`),
         axios.get(`${API}/products/all`, { headers }),
         axios.get(`${API}/orders`, { headers }),
         axios.get(`${API}/contact`, { headers })
       ]);
-      setStats(statsRes.data);
-      setCategories(categoriesRes.data);
-      setProducts(productsRes.data);
-      setOrders(ordersRes.data);
-      setMessages(messagesRes.data);
+      setStats(results[0].data);
+      setCategories(results[1].data);
+      setProducts(results[2].data);
+      setOrders(results[3].data);
+      setMessages(results[4].data);
     } catch (error) {
       console.error('Error fetching data:', error);
       if (error.response?.status === 401) {
@@ -86,7 +59,19 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, logout, navigate]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (token) {
+      fetchAllData();
+    }
+  }, [token, fetchAllData]);
 
   const handleLogout = () => {
     logout();
@@ -94,6 +79,14 @@ export default function AdminDashboardPage() {
   };
 
   if (!isAuthenticated) return null;
+
+  const navItems = [
+    { id: 'dashboard', icon: LayoutDashboard, label: t('admin.dashboard.stats') },
+    { id: 'categories', icon: FolderOpen, label: t('admin.dashboard.categories') },
+    { id: 'products', icon: Package, label: t('admin.dashboard.products') },
+    { id: 'orders', icon: ShoppingCart, label: t('admin.dashboard.orders') },
+    { id: 'messages', icon: MessageSquare, label: t('admin.dashboard.messages') },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900" data-testid="admin-dashboard">
@@ -112,13 +105,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <nav className="space-y-2">
-          {[
-            { id: 'dashboard', icon: LayoutDashboard, label: t('admin.dashboard.stats') },
-            { id: 'categories', icon: FolderOpen, label: t('admin.dashboard.categories') },
-            { id: 'products', icon: Package, label: t('admin.dashboard.products') },
-            { id: 'orders', icon: ShoppingCart, label: t('admin.dashboard.orders') },
-            { id: 'messages', icon: MessageSquare, label: t('admin.dashboard.messages') },
-          ].map((item) => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
@@ -174,13 +161,7 @@ export default function AdminDashboardPage() {
         {/* Mobile Tabs */}
         <div className="md:hidden mb-6 overflow-x-auto">
           <div className="flex gap-2">
-            {[
-              { id: 'dashboard', icon: LayoutDashboard },
-              { id: 'categories', icon: FolderOpen },
-              { id: 'products', icon: Package },
-              { id: 'orders', icon: ShoppingCart },
-              { id: 'messages', icon: MessageSquare },
-            ].map((item) => (
+            {navItems.map((item) => (
               <Button
                 key={item.id}
                 variant={activeTab === item.id ? 'default' : 'outline'}
@@ -196,10 +177,10 @@ export default function AdminDashboardPage() {
 
         {/* Content */}
         {activeTab === 'dashboard' && (
-          <DashboardTab stats={stats} t={t} language={language} admin={admin} />
+          <DashboardContent stats={stats} t={t} admin={admin} />
         )}
         {activeTab === 'categories' && (
-          <CategoriesTab 
+          <CategoriesContent 
             categories={categories} 
             token={token} 
             onUpdate={fetchAllData}
@@ -208,7 +189,7 @@ export default function AdminDashboardPage() {
           />
         )}
         {activeTab === 'products' && (
-          <ProductsTab 
+          <ProductsContent 
             products={products}
             categories={categories}
             token={token}
@@ -218,7 +199,7 @@ export default function AdminDashboardPage() {
           />
         )}
         {activeTab === 'orders' && (
-          <OrdersTab 
+          <OrdersContent 
             orders={orders}
             token={token}
             onUpdate={fetchAllData}
@@ -227,7 +208,7 @@ export default function AdminDashboardPage() {
           />
         )}
         {activeTab === 'messages' && (
-          <MessagesTab 
+          <MessagesContent 
             messages={messages}
             token={token}
             onUpdate={fetchAllData}
@@ -240,36 +221,40 @@ export default function AdminDashboardPage() {
   );
 }
 
-// Dashboard Tab
-const DashboardTab = ({ stats, t, language, admin }) => (
-  <div className="space-y-8" data-testid="dashboard-tab">
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-        {t('admin.dashboard.welcome')}, {admin?.name}!
-      </h1>
-      <p className="text-slate-500 dark:text-slate-400">{t('admin.dashboard.title')}</p>
-    </div>
+// Dashboard Content
+function DashboardContent({ stats, t, admin }) {
+  const statItems = [
+    { label: t('admin.dashboard.products'), value: stats?.total_products || 0, color: 'bg-blue-500' },
+    { label: t('admin.dashboard.categories'), value: stats?.total_categories || 0, color: 'bg-emerald-500' },
+    { label: t('admin.dashboard.orders'), value: stats?.total_orders || 0, color: 'bg-purple-500' },
+    { label: t('admin.dashboard.pending'), value: stats?.pending_orders || 0, color: 'bg-amber-500' },
+  ];
 
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {[
-        { label: t('admin.dashboard.products'), value: stats?.total_products || 0, color: 'bg-blue-500' },
-        { label: t('admin.dashboard.categories'), value: stats?.total_categories || 0, color: 'bg-emerald-500' },
-        { label: t('admin.dashboard.orders'), value: stats?.total_orders || 0, color: 'bg-purple-500' },
-        { label: t('admin.dashboard.pending'), value: stats?.pending_orders || 0, color: 'bg-amber-500' },
-      ].map((stat, index) => (
-        <div key={index} className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
-          <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center mb-4`}>
-            <span className="text-white text-lg font-bold">{stat.value}</span>
+  return (
+    <div className="space-y-8" data-testid="dashboard-tab">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          {t('admin.dashboard.welcome')}, {admin?.name}!
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400">{t('admin.dashboard.title')}</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {statItems.map((stat, index) => (
+          <div key={index} className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
+            <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center mb-4`}>
+              <span className="text-white text-lg font-bold">{stat.value}</span>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+}
 
-// Categories Tab
-const CategoriesTab = ({ categories, token, onUpdate, t, language }) => {
+// Categories Content
+function CategoriesContent({ categories, token, onUpdate, t, language }) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [form, setForm] = useState({ name_pt: '', name_en: '', description_pt: '', description_en: '', image_url: '' });
@@ -317,6 +302,12 @@ const CategoriesTab = ({ categories, token, onUpdate, t, language }) => {
     setIsOpen(true);
   };
 
+  const openNew = () => {
+    setEditingCategory(null);
+    setForm({ name_pt: '', name_en: '', description_pt: '', description_en: '', image_url: '' });
+    setIsOpen(true);
+  };
+
   return (
     <div className="space-y-6" data-testid="categories-tab">
       <div className="flex items-center justify-between">
@@ -325,7 +316,7 @@ const CategoriesTab = ({ categories, token, onUpdate, t, language }) => {
         </h2>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => { setEditingCategory(null); setForm({ name_pt: '', name_en: '', description_pt: '', description_en: '', image_url: '' }); }} data-testid="add-category-btn">
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={openNew} data-testid="add-category-btn">
               <Plus className="w-4 h-4 mr-2" />
               {t('admin.categories.add')}
             </Button>
@@ -378,7 +369,13 @@ const CategoriesTab = ({ categories, token, onUpdate, t, language }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {categories.map((category) => (
+              {categories.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                    {language === 'pt' ? 'Nenhuma categoria encontrada' : 'No categories found'}
+                  </td>
+                </tr>
+              ) : categories.map((category) => (
                 <tr key={category.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -405,23 +402,16 @@ const CategoriesTab = ({ categories, token, onUpdate, t, language }) => {
                   </td>
                 </tr>
               ))}
-              {categories.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                    {language === 'pt' ? 'Nenhuma categoria encontrada' : 'No categories found'}
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
     </div>
   );
-};
+}
 
-// Products Tab
-const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => {
+// Products Content
+function ProductsContent({ products, categories, token, onUpdate, t, language }) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [form, setForm] = useState({
@@ -431,7 +421,7 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
   });
   const [newColor, setNewColor] = useState({ name_pt: '', name_en: '', hex_code: '#000000', image_url: '' });
   const [newSize, setNewSize] = useState({ name: '', price_adjustment: 0 });
-  const [newCustomization, setNewCustomization] = useState({ name_pt: '', name_en: '', type: 'text', required: false, max_length: null });
+  const [newCustomization, setNewCustomization] = useState({ name_pt: '', name_en: '', type: 'text', required: false });
   const [newImage, setNewImage] = useState('');
 
   const resetForm = () => {
@@ -440,10 +430,6 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
       base_price: 0, category_id: '', colors: [], sizes: [],
       customization_options: [], images: [], featured: false, active: true
     });
-    setNewColor({ name_pt: '', name_en: '', hex_code: '#000000', image_url: '' });
-    setNewSize({ name: '', price_adjustment: 0 });
-    setNewCustomization({ name_pt: '', name_en: '', type: 'text', required: false, max_length: null });
-    setNewImage('');
   };
 
   const handleSubmit = async (e) => {
@@ -480,19 +466,19 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
   const openEdit = (product) => {
     setEditingProduct(product);
     setForm({
-      name_pt: product.name_pt,
-      name_en: product.name_en,
-      description_pt: product.description_pt,
-      description_en: product.description_en,
-      base_price: product.base_price,
-      category_id: product.category_id,
-      colors: product.colors || [],
-      sizes: product.sizes || [],
+      name_pt: product.name_pt, name_en: product.name_en,
+      description_pt: product.description_pt, description_en: product.description_en,
+      base_price: product.base_price, category_id: product.category_id,
+      colors: product.colors || [], sizes: product.sizes || [],
       customization_options: product.customization_options || [],
-      images: product.images || [],
-      featured: product.featured,
-      active: product.active
+      images: product.images || [], featured: product.featured, active: product.active
     });
+    setIsOpen(true);
+  };
+
+  const openNew = () => {
+    setEditingProduct(null);
+    resetForm();
     setIsOpen(true);
   };
 
@@ -513,7 +499,7 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
   const addCustomization = () => {
     if (newCustomization.name_pt) {
       setForm(p => ({ ...p, customization_options: [...p.customization_options, { ...newCustomization }] }));
-      setNewCustomization({ name_pt: '', name_en: '', type: 'text', required: false, max_length: null });
+      setNewCustomization({ name_pt: '', name_en: '', type: 'text', required: false });
     }
   };
 
@@ -524,6 +510,11 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
     }
   };
 
+  const removeColor = (index) => setForm(p => ({ ...p, colors: p.colors.filter((_, i) => i !== index) }));
+  const removeSize = (index) => setForm(p => ({ ...p, sizes: p.sizes.filter((_, i) => i !== index) }));
+  const removeCustomization = (index) => setForm(p => ({ ...p, customization_options: p.customization_options.filter((_, i) => i !== index) }));
+  const removeImage = (index) => setForm(p => ({ ...p, images: p.images.filter((_, i) => i !== index) }));
+
   return (
     <div className="space-y-6" data-testid="products-tab">
       <div className="flex items-center justify-between">
@@ -532,7 +523,7 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
         </h2>
         <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) { setEditingProduct(null); resetForm(); } }}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700" data-testid="add-product-btn">
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={openNew} data-testid="add-product-btn">
               <Plus className="w-4 h-4 mr-2" />
               {t('admin.products.add')}
             </Button>
@@ -593,9 +584,7 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
                     <div key={i} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-lg">
                       <span className="w-4 h-4 rounded-full" style={{ backgroundColor: color.hex_code }} />
                       <span className="text-sm">{color.name_pt}</span>
-                      <button type="button" onClick={() => setForm(p => ({ ...p, colors: p.colors.filter((_, idx) => idx !== i) }))} className="text-red-500">
-                        <X className="w-3 h-3" />
-                      </button>
+                      <button type="button" onClick={() => removeColor(i)} className="text-red-500"><X className="w-3 h-3" /></button>
                     </div>
                   ))}
                 </div>
@@ -615,9 +604,7 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
                   {form.sizes.map((size, i) => (
                     <div key={i} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-lg">
                       <span className="text-sm">{size.name} (+€{size.price_adjustment})</span>
-                      <button type="button" onClick={() => setForm(p => ({ ...p, sizes: p.sizes.filter((_, idx) => idx !== i) }))} className="text-red-500">
-                        <X className="w-3 h-3" />
-                      </button>
+                      <button type="button" onClick={() => removeSize(i)} className="text-red-500"><X className="w-3 h-3" /></button>
                     </div>
                   ))}
                 </div>
@@ -635,9 +622,7 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
                   {form.customization_options.map((opt, i) => (
                     <div key={i} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-lg">
                       <span className="text-sm">{opt.name_pt} ({opt.type}) {opt.required && '*'}</span>
-                      <button type="button" onClick={() => setForm(p => ({ ...p, customization_options: p.customization_options.filter((_, idx) => idx !== i) }))} className="text-red-500 ml-auto">
-                        <X className="w-3 h-3" />
-                      </button>
+                      <button type="button" onClick={() => removeCustomization(i)} className="text-red-500 ml-auto"><X className="w-3 h-3" /></button>
                     </div>
                   ))}
                 </div>
@@ -653,7 +638,7 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
                   </Select>
                   <div className="flex items-center gap-2">
                     <Switch checked={newCustomization.required} onCheckedChange={(v) => setNewCustomization(p => ({ ...p, required: v }))} />
-                    <span className="text-sm">{language === 'pt' ? 'Obrigatório' : 'Required'}</span>
+                    <span className="text-xs">{language === 'pt' ? 'Obrig.' : 'Req.'}</span>
                   </div>
                   <Button type="button" onClick={addCustomization} variant="outline">+</Button>
                 </div>
@@ -666,7 +651,7 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
                   {form.images.map((img, i) => (
                     <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden group">
                       <img src={img} alt="" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setForm(p => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }))} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button type="button" onClick={() => removeImage(i)} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <X className="w-5 h-5 text-white" />
                       </button>
                     </div>
@@ -712,21 +697,26 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {products.map((product) => {
+              {products.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                    {language === 'pt' ? 'Nenhum produto encontrado' : 'No products found'}
+                  </td>
+                </tr>
+              ) : products.map((product) => {
                 const category = categories.find(c => c.id === product.category_id);
+                const productImg = (product.images && product.images[0]) || (product.colors && product.colors[0]?.image_url);
                 return (
                   <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {(product.images?.[0] || product.colors?.[0]?.image_url) && (
-                          <img src={product.images?.[0] || product.colors?.[0]?.image_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                        )}
+                        {productImg && <img src={productImg} alt="" className="w-12 h-12 rounded-lg object-cover" />}
                         <div>
                           <p className="font-medium text-slate-900 dark:text-white">
                             {language === 'pt' ? product.name_pt : product.name_en}
                           </p>
                           <div className="flex gap-1 mt-1">
-                            {product.colors?.slice(0, 4).map((c, i) => (
+                            {product.colors && product.colors.slice(0, 4).map((c, i) => (
                               <span key={i} className="w-3 h-3 rounded-full border border-slate-200" style={{ backgroundColor: c.hex_code }} />
                             ))}
                           </div>
@@ -760,25 +750,16 @@ const ProductsTab = ({ products, categories, token, onUpdate, t, language }) => 
                   </tr>
                 );
               })}
-              {products.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                    {language === 'pt' ? 'Nenhum produto encontrado' : 'No products found'}
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
     </div>
   );
-};
+}
 
-// Orders Tab
-const OrdersTab = ({ orders, token, onUpdate, t, language }) => {
-  const [selectedOrder, setSelectedOrder] = useState(null);
-
+// Orders Content
+function OrdersContent({ orders, token, onUpdate, t, language }) {
   const updateStatus = async (orderId, status) => {
     try {
       await axios.put(`${API}/orders/${orderId}/status?status=${status}`, {}, { headers: { Authorization: `Bearer ${token}` } });
@@ -814,11 +795,16 @@ const OrdersTab = ({ orders, token, onUpdate, t, language }) => {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{t('admin.orders.total')}</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{t('admin.orders.status')}</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{t('admin.orders.date')}</th>
-                <th className="px-6 py-4 text-right"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {orders.map((order) => (
+              {orders.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                    {language === 'pt' ? 'Nenhuma encomenda encontrada' : 'No orders found'}
+                  </td>
+                </tr>
+              ) : orders.map((order) => (
                 <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                   <td className="px-6 py-4 font-mono text-sm font-medium text-slate-900 dark:text-white">
                     {order.order_number}
@@ -835,7 +821,7 @@ const OrdersTab = ({ orders, token, onUpdate, t, language }) => {
                   <td className="px-6 py-4">
                     <Select value={order.status} onValueChange={(v) => updateStatus(order.id, v)}>
                       <SelectTrigger className="w-[140px]">
-                        <Badge className={statusColors[order.status]}>
+                        <Badge className={statusColors[order.status] || ''}>
                           {t(`admin.orders.statuses.${order.status}`)}
                         </Badge>
                       </SelectTrigger>
@@ -851,83 +837,18 @@ const OrdersTab = ({ orders, token, onUpdate, t, language }) => {
                   <td className="px-6 py-4 text-sm text-slate-500">
                     {new Date(order.created_at).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-US')}
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order)}>
-                          {language === 'pt' ? 'Ver' : 'View'}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>{t('admin.orders.number')}: {order.order_number}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <h4 className="font-semibold mb-2">{t('admin.orders.customer')}</h4>
-                              <p>{order.customer_name}</p>
-                              <p className="text-sm text-slate-500">{order.customer_email}</p>
-                              <p className="text-sm text-slate-500">{order.customer_phone}</p>
-                            </div>
-                            <div>
-                              <h4 className="font-semibold mb-2">{language === 'pt' ? 'Morada' : 'Address'}</h4>
-                              <p className="text-sm text-slate-600 dark:text-slate-400">{order.shipping_address}</p>
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold mb-2">{language === 'pt' ? 'Itens' : 'Items'}</h4>
-                            <div className="space-y-2">
-                              {order.items.map((item, i) => (
-                                <div key={i} className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg">
-                                  <p className="font-medium">{item.product_id}</p>
-                                  <p className="text-sm text-slate-500">
-                                    Qty: {item.quantity}
-                                    {item.selected_color && ` | ${language === 'pt' ? 'Cor' : 'Color'}: ${item.selected_color}`}
-                                    {item.selected_size && ` | ${language === 'pt' ? 'Tamanho' : 'Size'}: ${item.selected_size}`}
-                                  </p>
-                                  {item.customizations && Object.keys(item.customizations).length > 0 && (
-                                    <p className="text-sm text-slate-500">
-                                      {Object.entries(item.customizations).map(([k, v]) => v && `${k}: ${v}`).filter(Boolean).join(' | ')}
-                                    </p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          {order.notes && (
-                            <div>
-                              <h4 className="font-semibold mb-2">{language === 'pt' ? 'Notas' : 'Notes'}</h4>
-                              <p className="text-sm text-slate-600 dark:text-slate-400">{order.notes}</p>
-                            </div>
-                          )}
-                          <div className="flex justify-between items-center pt-4 border-t">
-                            <span className="font-semibold">{t('admin.orders.total')}</span>
-                            <span className="text-xl font-bold">€{order.total_amount.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </td>
                 </tr>
               ))}
-              {orders.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                    {language === 'pt' ? 'Nenhuma encomenda encontrada' : 'No orders found'}
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
     </div>
   );
-};
+}
 
-// Messages Tab
-const MessagesTab = ({ messages, token, onUpdate, t, language }) => {
+// Messages Content
+function MessagesContent({ messages, token, onUpdate, t, language }) {
   const markAsRead = async (id) => {
     try {
       await axios.put(`${API}/contact/${id}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
@@ -955,7 +876,14 @@ const MessagesTab = ({ messages, token, onUpdate, t, language }) => {
       </h2>
 
       <div className="space-y-4">
-        {messages.map((msg) => (
+        {messages.length === 0 ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center">
+            <MessageSquare className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+            <p className="text-slate-500 dark:text-slate-400">
+              {language === 'pt' ? 'Nenhuma mensagem encontrada' : 'No messages found'}
+            </p>
+          </div>
+        ) : messages.map((msg) => (
           <div
             key={msg.id}
             className={`bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm ${!msg.read ? 'ring-2 ring-blue-500' : ''}`}
@@ -975,7 +903,7 @@ const MessagesTab = ({ messages, token, onUpdate, t, language }) => {
               <div className="flex gap-2">
                 {!msg.read && (
                   <Button variant="ghost" size="sm" onClick={() => markAsRead(msg.id)}>
-                    {language === 'pt' ? 'Marcar como lida' : 'Mark as read'}
+                    {language === 'pt' ? 'Marcar lida' : 'Mark read'}
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" className="text-red-500" onClick={() => deleteMessage(msg.id)}>
@@ -990,15 +918,7 @@ const MessagesTab = ({ messages, token, onUpdate, t, language }) => {
             </p>
           </div>
         ))}
-        {messages.length === 0 && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center">
-            <MessageSquare className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-            <p className="text-slate-500 dark:text-slate-400">
-              {language === 'pt' ? 'Nenhuma mensagem encontrada' : 'No messages found'}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
-};
+}
