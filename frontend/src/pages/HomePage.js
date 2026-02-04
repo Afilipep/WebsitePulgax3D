@@ -26,6 +26,8 @@ import {
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// TODO: Adicionar mais opções de pagamento (PayPal, Multibanco)
+// FIXME: Melhorar a responsividade em tablets
 export default function HomePage() {
   const { t } = useLanguage();
   const location = useLocation();
@@ -49,6 +51,12 @@ export default function HomePage() {
         }
       }, 100);
     }
+    
+    // Easter egg: Console message for curious developers
+    console.log('🎯 Olá, desenvolvedor curioso! 👋');
+    console.log('Este site foi feito com muito carinho para a Pulgax 3D Store.');
+    console.log('Se estás a ver isto, provavelmente gostas de código tanto quanto nós! 😄');
+    console.log('Contacta-nos se quiseres colaborar: @pulgaxstore');
   }, [location.hash]);
 
   const handleContactSubmit = async (e) => {
@@ -56,10 +64,11 @@ export default function HomePage() {
     setIsSubmitting(true);
     try {
       await axios.post(`${API}/contact`, contactForm);
-      toast.success(t('contact.form.success'));
+      toast.success('Mensagem enviada! Vamos responder em breve 😊');
       setContactForm({ name: '', email: '', phone: '', subject: '', message: '' });
     } catch (error) {
-      toast.error(t('contact.form.error'));
+      // NOTE: Melhorar as mensagens de erro mais tarde
+      toast.error('Ups! Algo correu mal. Tenta novamente ou contacta-nos pelo Instagram.');
     } finally {
       setIsSubmitting(false);
     }
@@ -80,7 +89,7 @@ export default function HomePage() {
         <div className="absolute inset-0">
           <img 
             src="https://images.unsplash.com/photo-1736667117808-d8e33a51cd7f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwxfHwzZCUyMHByaW50ZXIlMjBwcmludGluZyUyMGNsb3NlJTIwdXAlMjB0ZWNobm9sb2d5fGVufDB8fHx8MTc3MDEzNTY4MHww&ixlib=rb-4.1.0&q=85"
-            alt="3D Printing"
+            alt="Impressora 3D em funcionamento"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-slate-900/60" />
@@ -384,19 +393,20 @@ export default function HomePage() {
             {/* Info */}
             <div>
               <span className="text-blue-600 font-medium text-sm uppercase tracking-wider">
-                {t('contact.subtitle')}
+                Vamos Conversar
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2 mb-6">
-                {t('contact.title')}
+                Tens uma Ideia? Fala Connosco!
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-8">
-                {t('about.description')}
+                Estamos sempre disponíveis para ouvir as tuas ideias e ajudar-te a torná-las realidade. 
+                Seja um projeto simples ou complexo, adoramos novos desafios!
               </p>
 
               {/* Social Links */}
               <div>
                 <h4 className="font-semibold text-slate-900 dark:text-white mb-4">
-                  {t('contact.social')}
+                  Segue-nos nas Redes Sociais
                 </h4>
                 <div className="flex gap-4">
                   <a 
@@ -430,7 +440,7 @@ export default function HomePage() {
               <form onSubmit={handleContactSubmit} className="space-y-6" data-testid="contact-form">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">{t('contact.form.name')}</Label>
+                    <Label htmlFor="name">Nome *</Label>
                     <Input
                       id="name"
                       name="name"
@@ -441,7 +451,7 @@ export default function HomePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">{t('contact.form.email')}</Label>
+                    <Label htmlFor="email">Email *</Label>
                     <Input
                       id="email"
                       name="email"
@@ -455,7 +465,7 @@ export default function HomePage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phone">{t('contact.form.phone')}</Label>
+                    <Label htmlFor="phone">Telemóvel</Label>
                     <Input
                       id="phone"
                       name="phone"
@@ -465,7 +475,7 @@ export default function HomePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="subject">{t('contact.form.subject')}</Label>
+                    <Label htmlFor="subject">Assunto *</Label>
                     <Input
                       id="subject"
                       name="subject"
@@ -477,7 +487,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="message">{t('contact.form.message')}</Label>
+                  <Label htmlFor="message">Mensagem *</Label>
                   <Textarea
                     id="message"
                     name="message"
@@ -485,6 +495,7 @@ export default function HomePage() {
                     onChange={handleInputChange}
                     rows={5}
                     required
+                    placeholder="Conta-nos a tua ideia... Quanto mais detalhes, melhor!"
                     data-testid="contact-message"
                   />
                 </div>
@@ -494,7 +505,7 @@ export default function HomePage() {
                   disabled={isSubmitting}
                   data-testid="contact-submit"
                 >
-                  {isSubmitting ? t('common.loading') : t('contact.form.send')}
+                  {isSubmitting ? 'A enviar...' : 'Enviar Mensagem'}
                 </Button>
               </form>
             </div>

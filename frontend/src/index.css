@@ -4,6 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import custom Pulgax styles */
+@import './styles/custom.css';
+
 :root {
   --pulgax-deep-blue: #0F172A;
   --pulgax-electric-blue: #2563EB;
