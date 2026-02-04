@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
-import { Instagram, ExternalLink, Printer } from 'lucide-react';
+import { Instagram } from 'lucide-react';
 
 // TikTok icon component
 const TikTokIcon = ({ className }) => (
@@ -11,6 +11,36 @@ const TikTokIcon = ({ className }) => (
 
 export const Footer = () => {
   const { t } = useLanguage();
+  const location = useLocation();
+
+  const handleLogoClick = (e) => {
+    if (location.pathname === '/' && location.hash) {
+      // If we're on homepage with a hash, prevent default Link behavior
+      e.preventDefault();
+      // Clear the hash and scroll to top
+      window.history.pushState('', document.title, window.location.pathname);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleLinkClick = (href, e) => {
+    if (href === '/' && location.pathname === '/' && location.hash) {
+      e.preventDefault();
+      window.history.pushState('', document.title, window.location.pathname);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (href.startsWith('/#')) {
+      const elementId = href.substring(2);
+      if (location.pathname === '/') {
+        e.preventDefault();
+        setTimeout(() => {
+          const element = document.getElementById(elementId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+      }
+    }
+  };
 
   const socialLinks = [
     { 
@@ -24,13 +54,7 @@ export const Footer = () => {
       icon: TikTokIcon, 
       label: 'TikTok',
       color: 'hover:text-slate-900 dark:hover:text-white'
-    },
-    { 
-      href: 'https://beacons.ai/pulgaxstore', 
-      icon: ExternalLink, 
-      label: 'Beacons',
-      color: 'hover:text-blue-500'
-    },
+    }
   ];
 
   const quickLinks = [
@@ -46,9 +70,13 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <Printer className="w-5 h-5 text-white" />
+            <Link to="/" className="flex items-center gap-2 mb-4" onClick={handleLogoClick}>
+              <div className="w-10 h-10 rounded-xl overflow-hidden">
+                <img 
+                  src="/logo.jpg" 
+                  alt="Pulgax 3D Logo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="font-semibold text-xl">
                 Pulgax <span className="text-blue-400">3D</span> Store
@@ -69,6 +97,7 @@ export const Footer = () => {
                 <li key={link.href}>
                   <Link
                     to={link.href}
+                    onClick={(e) => handleLinkClick(link.href, e)}
                     className="text-slate-400 hover:text-white text-sm transition-colors"
                   >
                     {link.label}

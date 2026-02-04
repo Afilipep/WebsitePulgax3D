@@ -2,16 +2,14 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
-import axios from 'axios';
+import api from '../../api';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-export function OrdersManager({ orders, token, onUpdate }) {
+export function OrdersManager({ orders, onUpdate }) {
   const { t, language } = useLanguage();
 
   const updateStatus = async (orderId, status) => {
     try {
-      await axios.put(`${API}/orders/${orderId}/status?status=${status}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await api.updateOrderStatus(orderId, status);
       toast.success(language === 'pt' ? 'Estado atualizado!' : 'Status updated!');
       onUpdate();
     } catch (error) {

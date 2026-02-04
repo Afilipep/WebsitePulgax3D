@@ -9,12 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
-import axios from 'axios';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import api from '../../api';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-export function ProductsManager({ products, categories, token, onUpdate }) {
+export function ProductsManager({ products, categories, onUpdate }) {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -32,7 +30,7 @@ export function ProductsManager({ products, categories, token, onUpdate }) {
         name_en: formData.name_en,
         description_pt: formData.description_pt,
         description_en: formData.description_en,
-        base_price: formData.base_price,
+        base_price: parseFloat(formData.base_price) || 0,
         category_id: formData.category_id,
         featured: formData.featured,
         active: formData.active,
@@ -53,28 +51,33 @@ export function ProductsManager({ products, categories, token, onUpdate }) {
         try { data.customization_options = JSON.parse(formData.customization_options); } catch(e) { data.customization_options = []; }
       }
 
-      const headers = { Authorization: `Bearer ${token}` };
+      console.log('💾 Saving product:', data, 'using FastAPI');
+      
       if (editingId) {
-        await axios.put(`${API}/products/${editingId}`, data, { headers });
+        await api.updateProduct(editingId, data);
       } else {
-        await axios.post(`${API}/products`, data, { headers });
+        await api.createProduct(data);
       }
-      toast.success(language === 'pt' ? 'Guardado!' : 'Saved!');
+      
+      toast.success(language === 'pt' ? 'Produto guardado!' : 'Product saved!');
       closeDialog();
       onUpdate();
     } catch (err) {
-      toast.error(language === 'pt' ? 'Erro' : 'Error');
+      console.error('Error saving product:', err);
+      toast.error(language === 'pt' ? 'Erro ao guardar produto' : 'Error saving product');
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm(language === 'pt' ? 'Eliminar?' : 'Delete?')) return;
+    if (!window.confirm(language === 'pt' ? 'Eliminar produto?' : 'Delete product?')) return;
     try {
-      await axios.delete(`${API}/products/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success(language === 'pt' ? 'Eliminado!' : 'Deleted!');
+      await api.deleteProduct(id);
+      
+      toast.success(language === 'pt' ? 'Produto eliminado!' : 'Product deleted!');
       onUpdate();
     } catch (err) {
-      toast.error('Error');
+      console.error('Error deleting product:', err);
+      toast.error(language === 'pt' ? 'Erro ao eliminar' : 'Error deleting');
     }
   }
 

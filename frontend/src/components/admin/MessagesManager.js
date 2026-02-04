@@ -2,17 +2,15 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
-import axios from 'axios';
 import { MessageSquare, Trash2 } from 'lucide-react';
+import api from '../../api';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-export function MessagesManager({ messages, token, onUpdate }) {
+export function MessagesManager({ messages, onUpdate }) {
   const { t, language } = useLanguage();
 
   const markAsRead = async (id) => {
     try {
-      await axios.put(`${API}/contact/${id}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await api.markMessageRead(id);
       onUpdate();
     } catch (error) {
       console.error('Error:', error);
@@ -22,7 +20,7 @@ export function MessagesManager({ messages, token, onUpdate }) {
   const deleteMessage = async (id) => {
     if (!window.confirm(language === 'pt' ? 'Eliminar?' : 'Delete?')) return;
     try {
-      await axios.delete(`${API}/contact/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await api.deleteMessage(id);
       toast.success(language === 'pt' ? 'Eliminada!' : 'Deleted!');
       onUpdate();
     } catch (error) {

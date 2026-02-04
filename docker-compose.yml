@@ -1,0 +1,66 @@
+# Docker Compose for Pulgax 3D Store
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: pulgax-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: pulgax123
+      MONGO_INITDB_DATABASE: pulgax_3d_store
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./backend/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - pulgax-network
+
+  # Backend API
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pulgax-backend
+    restart: unless-stopped
+    environment:
+      MONGO_URL: mongodb://admin:pulgax123@mongodb:27017/pulgax_3d_store?authSource=admin
+      DB_NAME: pulgax_3d_store
+      JWT_SECRET: pulgax-3d-store-super-secret-key-2024
+      CORS_ORIGINS: http://localhost:3000,http://localhost:80
+      PORT: 8000
+      HOST: 0.0.0.0
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend:/app
+    networks:
+      - pulgax-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pulgax-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      REACT_APP_BACKEND_URL: http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - pulgax-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  pulgax-network:
+    driver: bridge

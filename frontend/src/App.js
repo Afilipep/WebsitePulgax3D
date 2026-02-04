@@ -4,6 +4,7 @@ import { LanguageProvider } from "./context/LanguageContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
+import { ScrollToTop } from "./components/ScrollToTop";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -21,6 +22,7 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <BrowserRouter>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/products" element={<ProductsPage />} />

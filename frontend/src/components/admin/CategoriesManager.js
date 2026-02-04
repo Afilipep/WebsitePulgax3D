@@ -6,12 +6,10 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { toast } from 'sonner';
-import axios from 'axios';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import api from '../../api';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-export function CategoriesManager({ categories, token, onUpdate }) {
+export function CategoriesManager({ categories, onUpdate }) {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -20,19 +18,24 @@ export function CategoriesManager({ categories, token, onUpdate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const headers = { Authorization: `Bearer ${token}` };
+      console.log('💾 Saving category:', form, 'using FastAPI');
+      
       if (editingCategory) {
-        await axios.put(`${API}/categories/${editingCategory.id}`, form, { headers });
-        toast.success(language === 'pt' ? 'Categoria atualizada!' : 'Category updated!');
+        await api.updateCategory(editingCategory.id, form);
       } else {
-        await axios.post(`${API}/categories`, form, { headers });
-        toast.success(language === 'pt' ? 'Categoria criada!' : 'Category created!');
+        await api.createCategory(form);
       }
+      
+      toast.success(editingCategory 
+        ? (language === 'pt' ? 'Categoria atualizada!' : 'Category updated!')
+        : (language === 'pt' ? 'Categoria criada!' : 'Category created!')
+      );
       setIsOpen(false);
       setEditingCategory(null);
       setForm({ name_pt: '', name_en: '', description_pt: '', description_en: '', image_url: '' });
       onUpdate();
     } catch (error) {
+      console.error('Error saving category:', error);
       toast.error(language === 'pt' ? 'Erro ao guardar categoria' : 'Error saving category');
     }
   };
@@ -40,10 +43,12 @@ export function CategoriesManager({ categories, token, onUpdate }) {
   const handleDelete = async (id) => {
     if (!window.confirm(language === 'pt' ? 'Eliminar esta categoria?' : 'Delete this category?')) return;
     try {
-      await axios.delete(`${API}/categories/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await api.deleteCategory(id);
+      
       toast.success(language === 'pt' ? 'Categoria eliminada!' : 'Category deleted!');
       onUpdate();
     } catch (error) {
+      console.error('Error deleting category:', error);
       toast.error(language === 'pt' ? 'Erro ao eliminar categoria' : 'Error deleting category');
     }
   };

@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/ui/button';
 import { Toaster } from '../components/ui/sonner';
-import axios from 'axios';
 import {
   LayoutDashboard, Package, FolderOpen, ShoppingCart, MessageSquare,
   LogOut, Printer, Moon, Sun, Globe
@@ -15,8 +14,7 @@ import { CategoriesManager } from '../components/admin/CategoriesManager';
 import { ProductsManager } from '../components/admin/ProductsManager';
 import { OrdersManager } from '../components/admin/OrdersManager';
 import { MessagesManager } from '../components/admin/MessagesManager';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from '../api';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -34,20 +32,31 @@ export default function AdminDashboardPage() {
   const fetchAllData = useCallback(async () => {
     if (!token) return;
     try {
-      const headers = { Authorization: `Bearer ${token}` };
+      console.log('📊 Fetching dashboard data from FastAPI');
+      
       const results = await Promise.all([
-        axios.get(`${API}/stats`, { headers }),
-        axios.get(`${API}/categories`),
-        axios.get(`${API}/products/all`, { headers }),
-        axios.get(`${API}/orders`, { headers }),
-        axios.get(`${API}/contact`, { headers })
+        api.getStats(),
+        api.getCategories(),
+        api.getAllProducts(),
+        api.getOrders(),
+        api.getMessages()
       ]);
+      
       setStats(results[0].data);
       setCategories(results[1].data);
       setProducts(results[2].data);
       setOrders(results[3].data);
       setMessages(results[4].data);
+      
+      console.log('📊 Dashboard data loaded:', {
+        stats: results[0].data,
+        categories: results[1].data.length,
+        products: results[2].data.length,
+        orders: results[3].data.length,
+        messages: results[4].data.length
+      });
     } catch (error) {
+      console.error('Error fetching dashboard data:', error);
       if (error.response?.status === 401) {
         logout();
         navigate('/admin');
@@ -169,10 +178,10 @@ export default function AdminDashboardPage() {
 
         {/* Content */}
         {activeTab === 'dashboard' && <DashboardStats stats={stats} admin={admin} />}
-        {activeTab === 'categories' && <CategoriesManager categories={categories} token={token} onUpdate={fetchAllData} />}
-        {activeTab === 'products' && <ProductsManager products={products} categories={categories} token={token} onUpdate={fetchAllData} />}
-        {activeTab === 'orders' && <OrdersManager orders={orders} token={token} onUpdate={fetchAllData} />}
-        {activeTab === 'messages' && <MessagesManager messages={messages} token={token} onUpdate={fetchAllData} />}
+        {activeTab === 'categories' && <CategoriesManager categories={categories} onUpdate={fetchAllData} />}
+        {activeTab === 'products' && <ProductsManager products={products} categories={categories} onUpdate={fetchAllData} />}
+        {activeTab === 'orders' && <OrdersManager orders={orders} onUpdate={fetchAllData} />}
+        {activeTab === 'messages' && <MessagesManager messages={messages} onUpdate={fetchAllData} />}
       </main>
     </div>
   );

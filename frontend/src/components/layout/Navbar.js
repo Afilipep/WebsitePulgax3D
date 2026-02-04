@@ -7,12 +7,10 @@ import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { 
   Menu, 
-  X, 
   ShoppingCart, 
   Sun, 
   Moon, 
-  Globe,
-  Printer
+  Globe
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -35,15 +33,44 @@ export const Navbar = () => {
     return location.pathname.startsWith(href);
   };
 
+  const handleLogoClick = (e) => {
+    if (location.pathname === '/' && location.hash) {
+      // If we're on homepage with a hash, prevent default Link behavior
+      e.preventDefault();
+      // Clear the hash and scroll to top
+      window.history.pushState('', document.title, window.location.pathname);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    // If we're on a different page, let the Link component handle navigation normally
+  };
+
   const handleNavClick = (href) => {
     setIsOpen(false);
+    
+    if (href === '/') {
+      // Handle home navigation
+      if (location.pathname === '/' && location.hash) {
+        // Clear hash and scroll to top
+        window.history.pushState('', document.title, window.location.pathname);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+    
     if (href.startsWith('/#')) {
       const elementId = href.substring(2);
       if (location.pathname === '/') {
-        const element = document.getElementById(elementId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
+        // If we're already on the homepage, just scroll to the element
+        setTimeout(() => {
+          const element = document.getElementById(elementId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+      } else {
+        // If we're on a different page, navigate to home first
+        // The hash will be handled by the useEffect in HomePage
+        window.location.href = href;
       }
     }
   };
@@ -57,9 +84,14 @@ export const Navbar = () => {
             to="/" 
             className="flex items-center gap-2 group"
             data-testid="logo-link"
+            onClick={handleLogoClick}
           >
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Printer className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden group-hover:scale-105 transition-transform">
+              <img 
+                src="/logo.jpg" 
+                alt="Pulgax 3D Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="font-semibold text-lg text-slate-900 dark:text-white hidden sm:block">
               Pulgax <span className="text-blue-600">3D</span>
@@ -72,7 +104,12 @@ export const Navbar = () => {
               <Link
                 key={link.href}
                 to={link.href}
-                onClick={() => handleNavClick(link.href)}
+                onClick={(e) => {
+                  if (link.href === '/' && location.pathname === '/' && location.hash) {
+                    e.preventDefault();
+                  }
+                  handleNavClick(link.href);
+                }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive(link.href)
                     ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30'
@@ -147,7 +184,12 @@ export const Navbar = () => {
                       <Link
                         key={link.href}
                         to={link.href}
-                        onClick={() => handleNavClick(link.href)}
+                        onClick={(e) => {
+                          if (link.href === '/' && location.pathname === '/' && location.hash) {
+                            e.preventDefault();
+                          }
+                          handleNavClick(link.href);
+                        }}
                         className={`px-4 py-3 rounded-lg text-base font-medium transition-colors ${
                           isActive(link.href)
                             ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30'

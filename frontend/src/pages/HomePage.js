@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/button';
@@ -28,6 +28,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const location = useLocation();
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
@@ -36,6 +37,19 @@ export default function HomePage() {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Handle hash navigation when component mounts or hash changes
+  useEffect(() => {
+    if (location.hash) {
+      const elementId = location.hash.substring(1);
+      setTimeout(() => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [location.hash]);
 
   const handleContactSubmit = async (e) => {
     e.preventDefault();
@@ -77,15 +91,15 @@ export default function HomePage() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 rounded-full mb-6 animate-fade-in">
               <Sparkles className="w-4 h-4 text-blue-400" />
-              <span className="text-blue-300 text-sm font-medium">Pulgax 3D Store</span>
+              <span className="text-blue-300 text-sm font-medium">Impressão 3D Artesanal</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-6 animate-slide-up">
-              {t('hero.title')}
+              Criamos o que imaginas em <span className="text-blue-400">3D</span>
             </h1>
             
             <p className="text-lg text-slate-300 mb-8 leading-relaxed animate-slide-up stagger-1">
-              {t('hero.subtitle')}
+              Da ideia à realidade. Especializamo-nos em impressão 3D personalizada para decoração, utilitários e presentes únicos. Cada peça é criada com paixão e atenção ao detalhe.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 animate-slide-up stagger-2">
@@ -95,7 +109,7 @@ export default function HomePage() {
                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 group"
                   data-testid="hero-cta-products"
                 >
-                  {t('hero.cta')}
+                  Ver Produtos
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
@@ -106,7 +120,7 @@ export default function HomePage() {
                   className="border-slate-500 text-white hover:bg-white/10"
                   data-testid="hero-cta-contact"
                 >
-                  {t('hero.ctaSecondary')}
+                  Falar Connosco
                 </Button>
               </a>
             </div>
@@ -129,51 +143,73 @@ export default function HomePage() {
             <div className="relative">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden">
                 <img 
-                  src="https://images.unsplash.com/photo-1694701503673-379c9e0d887e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjAzZCUyMHByaW50aW5nJTIwd29ya3Nob3AlMjBjbGVhbnxlbnwwfHx8fDE3NzAxMzU2ODV8MA&ixlib=rb-4.1.0&q=85"
+                  src="https://inovasocial.com.br/wp-content/uploads/2023/08/inovacao-impressao-3d-impacto-inovasocial-inovacao-social-01-1200x675.jpg"
                   alt="Workshop"
                   className="w-full h-full object-cover"
                 />
               </div>
               {/* Floating badge */}
               <div className="absolute -bottom-6 -right-6 bg-blue-600 text-white px-6 py-4 rounded-xl shadow-xl">
-                <div className="text-2xl font-bold">100%</div>
-                <div className="text-sm text-blue-200">3D Printing</div>
+                <div className="text-2xl font-bold">+500</div>
+                <div className="text-sm text-blue-200">Peças Criadas</div>
               </div>
             </div>
 
             {/* Content */}
             <div>
               <span className="text-blue-600 font-medium text-sm uppercase tracking-wider">
-                {t('about.subtitle')}
+                A Nossa História
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2 mb-6">
-                {t('about.title')}
+                Paixão pela Impressão 3D
               </h2>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-8">
-                {t('about.description')}
+                Começámos como um hobby e transformámos a nossa paixão pela tecnologia 3D num negócio. 
+                Cada peça que criamos é única, pensada especialmente para ti. Desde pequenos detalhes decorativos 
+                até utilitários do dia-a-dia, trabalhamos com materiais de qualidade e atenção ao pormenor.
               </p>
 
               {/* Values */}
               <div className="space-y-4">
-                {[
-                  { key: 'innovation', icon: Sparkles },
-                  { key: 'quality', icon: CheckCircle2 },
-                  { key: 'personalization', icon: Palette },
-                ].map((item) => (
-                  <div key={item.key} className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-900 dark:text-white">
-                        {t(`about.values.${item.key}`)}
-                      </h4>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {t(`about.values.${item.key}Desc`)}
-                      </p>
-                    </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-5 h-5 text-blue-600" />
                   </div>
-                ))}
+                  <div>
+                    <h4 className="font-semibold text-slate-900 dark:text-white">
+                      Inovação Constante
+                    </h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Sempre a explorar novas técnicas e materiais para criar peças ainda melhores
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 dark:text-white">
+                      Qualidade Garantida
+                    </h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Cada peça passa por controlo de qualidade rigoroso antes de chegar às tuas mãos
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Palette className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 dark:text-white">
+                      100% Personalizado
+                    </h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Tens uma ideia? Nós tornamo-la realidade. Personalizações sem limites
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -185,34 +221,52 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-blue-600 font-medium text-sm uppercase tracking-wider">
-              {t('services.subtitle')}
+              O Que Fazemos
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2">
-              {t('services.title')}
+              Os Nossos Serviços
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { key: 'gifts', icon: Gift, color: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600' },
-              { key: 'custom', icon: Palette, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' },
-              { key: 'business', icon: Building2, color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' },
-            ].map((service) => (
-              <div 
-                key={service.key}
-                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 transition-shadow"
-              >
-                <div className={`w-14 h-14 ${service.color} rounded-xl flex items-center justify-center mb-6`}>
-                  <service.icon className="w-7 h-7" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
-                  {t(`services.${service.key}.title`)}
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400">
-                  {t(`services.${service.key}.description`)}
-                </p>
+            <div className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 transition-shadow">
+              <div className="w-14 h-14 bg-pink-100 dark:bg-pink-900/30 text-pink-600 rounded-xl flex items-center justify-center mb-6">
+                <Gift className="w-7 h-7" />
               </div>
-            ))}
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+                Presentes Únicos
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400">
+                Cria presentes verdadeiramente especiais. Desde porta-chaves personalizados a decorações temáticas, 
+                cada presente conta uma história única.
+              </p>
+            </div>
+            
+            <div className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 transition-shadow">
+              <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl flex items-center justify-center mb-6">
+                <Palette className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+                Peças Personalizadas
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400">
+                Tens uma ideia específica? Trabalhamos contigo desde o conceito até à peça final. 
+                Cores, tamanhos e detalhes completamente à tua medida.
+              </p>
+            </div>
+            
+            <div className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 transition-shadow">
+              <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl flex items-center justify-center mb-6">
+                <Building2 className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+                Soluções para Empresas
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400">
+                Protótipos, peças promocionais ou soluções técnicas. Ajudamos empresas a materializar 
+                as suas ideias com rapidez e qualidade.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -222,38 +276,73 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-blue-400 font-medium text-sm uppercase tracking-wider">
-              {t('process.subtitle')}
+              Como Trabalhamos
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-white mt-2">
-              {t('process.title')}
+              Do Conceito à Realidade
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { key: 'step1', icon: MessageSquare, number: '01' },
-              { key: 'step2', icon: Layers, number: '02' },
-              { key: 'step3', icon: Printer, number: '03' },
-              { key: 'step4', icon: Truck, number: '04' },
-            ].map((step, index) => (
-              <div 
-                key={step.key}
-                className="relative bg-slate-800 rounded-2xl p-6 group hover:bg-slate-700 transition-colors"
-              >
-                <span className="absolute top-4 right-4 text-4xl font-bold text-slate-700 group-hover:text-slate-600 transition-colors">
-                  {step.number}
-                </span>
-                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
-                  <step.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  {t(`process.steps.${step.key}.title`)}
-                </h3>
-                <p className="text-slate-400 text-sm">
-                  {t(`process.steps.${step.key}.description`)}
-                </p>
+            <div className="relative bg-slate-800 rounded-2xl p-6 group hover:bg-slate-700 transition-colors">
+              <span className="absolute top-4 right-4 text-4xl font-bold text-slate-700 group-hover:text-slate-600 transition-colors">
+                01
+              </span>
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
+                <MessageSquare className="w-6 h-6 text-white" />
               </div>
-            ))}
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Conversa Inicial
+              </h3>
+              <p className="text-slate-400 text-sm">
+                Falamos sobre a tua ideia, necessidades e preferências. Sem compromisso.
+              </p>
+            </div>
+            
+            <div className="relative bg-slate-800 rounded-2xl p-6 group hover:bg-slate-700 transition-colors">
+              <span className="absolute top-4 right-4 text-4xl font-bold text-slate-700 group-hover:text-slate-600 transition-colors">
+                02
+              </span>
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
+                <Layers className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Design & Orçamento
+              </h3>
+              <p className="text-slate-400 text-sm">
+                Criamos o design 3D e apresentamos um orçamento transparente e justo.
+              </p>
+            </div>
+            
+            <div className="relative bg-slate-800 rounded-2xl p-6 group hover:bg-slate-700 transition-colors">
+              <span className="absolute top-4 right-4 text-4xl font-bold text-slate-700 group-hover:text-slate-600 transition-colors">
+                03
+              </span>
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
+                <Printer className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Impressão 3D
+              </h3>
+              <p className="text-slate-400 text-sm">
+                Imprimimos a tua peça com materiais de qualidade e acabamentos perfeitos.
+              </p>
+            </div>
+            
+            <div className="relative bg-slate-800 rounded-2xl p-6 group hover:bg-slate-700 transition-colors">
+              <span className="absolute top-4 right-4 text-4xl font-bold text-slate-700 group-hover:text-slate-600 transition-colors">
+                04
+              </span>
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
+                <Truck className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Entrega Rápida
+              </h3>
+              <p className="text-slate-400 text-sm">
+                Enviamos ou entregamos a tua peça com todo o cuidado e rapidez.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -263,27 +352,27 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-blue-600 font-medium text-sm uppercase tracking-wider">
-              {t('payment.subtitle')}
+              Formas de Pagamento
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2">
-              {t('payment.title')}
+              Paga Como Preferires
             </h2>
           </div>
 
           <div className="flex flex-wrap justify-center gap-6">
-            {[
-              { key: 'mbway', icon: Smartphone, label: t('payment.mbway') },
-              { key: 'transfer', icon: Banknote, label: t('payment.transfer') },
-              { key: 'vinted', icon: CreditCard, label: t('payment.vinted') },
-            ].map((method) => (
-              <div 
-                key={method.key}
-                className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-xl"
-              >
-                <method.icon className="w-6 h-6 text-blue-600" />
-                <span className="font-medium text-slate-900 dark:text-white">{method.label}</span>
-              </div>
-            ))}
+            <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-xl">
+              <Smartphone className="w-6 h-6 text-blue-600" />
+              <span className="font-medium text-slate-900 dark:text-white">MB WAY</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-xl">
+              <Banknote className="w-6 h-6 text-blue-600" />
+              <span className="font-medium text-slate-900 dark:text-white">Transferência</span>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-xl">
+              <CreditCard className="w-6 h-6 text-blue-600" />
+              <span className="font-medium text-slate-900 dark:text-white">Vinted</span>
+            </div>
+          </div>
           </div>
         </div>
       </section>
@@ -330,18 +419,6 @@ export default function HomePage() {
                   >
                     <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                    </svg>
-                  </a>
-                  <a 
-                    href="https://beacons.ai/pulgaxstore" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform"
-                    data-testid="contact-beacons"
-                  >
-                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                     </svg>
                   </a>
                 </div>

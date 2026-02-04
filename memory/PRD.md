@@ -63,4 +63,3 @@ Build a modern, professional e-commerce website for Pulgax 3D Store, a small bus
 ## Social Links
 - Instagram: https://www.instagram.com/pulgaxstore/
 - TikTok: https://www.tiktok.com/@pulgaxstore
-- Beacons: https://beacons.ai/pulgaxstore
