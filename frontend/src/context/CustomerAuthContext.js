@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import api from '../api';
 
 const CustomerAuthContext = createContext();
@@ -15,7 +15,11 @@ export const CustomerAuthProvider = ({ children }) => {
 
   const [isValidating, setIsValidating] = useState(false);
 
-  // Validate token on mount and when token changes
+  // Use refs to track previous values
+  const prevTokenRef = useRef(customerToken);
+  const prevCustomerRef = useRef(customer);
+
+  // Validate token when customerToken changes
   useEffect(() => {
     const validateToken = async () => {
       if (!customerToken || !customer) {
@@ -36,11 +40,18 @@ export const CustomerAuthProvider = ({ children }) => {
       }
     };
 
-    // Only validate if we have both token and customer data
-    if (customerToken && customer) {
+    // Only validate if customerToken has actually changed and we have both token and customer data
+    const tokenChanged = prevTokenRef.current !== customerToken;
+    const customerChanged = prevCustomerRef.current !== customer;
+    
+    if (tokenChanged && customerToken && customer) {
       validateToken();
     }
-  }, []); // Remove customerToken dependency to avoid infinite loops
+
+    // Update refs with current values
+    prevTokenRef.current = customerToken;
+    prevCustomerRef.current = customer;
+  }, [customerToken, customer]);
 
   useEffect(() => {
     if (customer) {
