@@ -1,9 +1,9 @@
 [
   {
-    "id": "a0c40e25-9dd1-486d-aa7d-e6bcc8d8aea5",
-    "email": "user@example.com",
-    "password": "$2b$12$2G.9kWwS6.PsqLjwd0E/RuUpWiVvW34KDX8BUvecLEHNGEcT5aTG6",
-    "name": "string",
+    "id": "admin-test-123",
+    "email": "admin@pulgax.com",
+    "password": "$2b$12$SsjCawwkUcogNZh1RSuAUO6GAJeLfHAecSSovTKm0IngBE9cow9lW",
+    "name": "Admin Pulgax",
     "created_at": "2026-02-04T01:50:48.384980+00:00"
   }
 ]

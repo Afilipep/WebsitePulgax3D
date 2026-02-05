@@ -15,6 +15,9 @@ export function CategoriesManager({ categories, onUpdate }) {
   const [editingCategory, setEditingCategory] = useState(null);
   const [form, setForm] = useState({ name_pt: '', name_en: '', description_pt: '', description_en: '', image_url: '' });
 
+  // Safe fallback for categories
+  const safeCategories = Array.isArray(categories) ? categories : [];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -132,13 +135,13 @@ export function CategoriesManager({ categories, onUpdate }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {categories.length === 0 ? (
+              {safeCategories.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                     {language === 'pt' ? 'Nenhuma categoria encontrada' : 'No categories found'}
                   </td>
                 </tr>
-              ) : categories.map((category) => (
+              ) : safeCategories.map((category) => (
                 <tr key={category.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">

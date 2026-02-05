@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [token, setToken] = useState(() => {
-    return localStorage.getItem('pulgax-token') || null;
+    return localStorage.getItem('pulgax-admin-token') || null;
   });
 
   useEffect(() => {
@@ -22,9 +22,9 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      localStorage.setItem('pulgax-token', token);
+      localStorage.setItem('pulgax-admin-token', token);
     } else {
-      localStorage.removeItem('pulgax-token');
+      localStorage.removeItem('pulgax-admin-token');
     }
   }, [token]);
 
@@ -36,6 +36,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setAdmin(null);
     setToken(null);
+    localStorage.removeItem('pulgax-admin');
+    localStorage.removeItem('pulgax-admin-token');
   };
 
   const isAuthenticated = !!token && !!admin;

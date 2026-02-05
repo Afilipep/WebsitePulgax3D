@@ -24,10 +24,7 @@ export default function CartPage() {
             {t('cart.empty')}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mb-8">
-            {language === 'pt' 
-              ? 'Adicione produtos ao seu carrinho para continuar'
-              : 'Add products to your cart to continue'
-            }
+            {t('cart.emptyMessage')}
           </p>
           <Link to="/products">
             <Button className="bg-blue-600 hover:bg-blue-700" data-testid="continue-shopping-btn">
@@ -125,9 +122,26 @@ export default function CartPage() {
                     </div>
                     
                     <div className="flex items-center gap-4">
-                      <span className="font-semibold text-slate-900 dark:text-white">
-                        €{((item.price + (item.size_price_adjustment || 0)) * item.quantity).toFixed(2)}
-                      </span>
+                      <div className="text-right">
+                        {/* Show price breakdown if there are adjustments */}
+                        {(item.size_price_adjustment > 0 || (item.customization_price_adjustments && Object.keys(item.customization_price_adjustments).length > 0)) && (
+                          <div className="text-xs text-slate-500 mb-1">
+                            Base: €{item.price.toFixed(2)}
+                            {item.size_price_adjustment > 0 && ` + €${item.size_price_adjustment.toFixed(2)}`}
+                            {item.customization_price_adjustments && Object.values(item.customization_price_adjustments).reduce((sum, adj) => sum + adj, 0) > 0 && 
+                              ` + €${Object.values(item.customization_price_adjustments).reduce((sum, adj) => sum + adj, 0).toFixed(2)}`
+                            }
+                          </div>
+                        )}
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          €{(
+                            item.final_unit_price 
+                              ? item.final_unit_price * item.quantity
+                              : (item.price + (item.size_price_adjustment || 0) + 
+                                 Object.values(item.customization_price_adjustments || {}).reduce((sum, adj) => sum + adj, 0)) * item.quantity
+                          ).toFixed(2)}
+                        </span>
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon"

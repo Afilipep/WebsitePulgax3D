@@ -8,10 +8,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-import axios from 'axios';
 import { ChevronLeft, Minus, Plus, ShoppingCart, Check } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from '../api';
 
 // Helper function to check if color is light
 const isLightColor = (hex) => {
@@ -42,11 +40,27 @@ export default function ProductDetailPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`${API}/products/${id}`);
-        const data = response.data;
+        console.log('Fetching product with ID:', id);
+        const response = await api.getProduct(id);
+        console.log('Product API response:', response);
+        
+        // Backend returns product directly, not wrapped in { data: ... }
+        const data = response;
         setProduct(data);
+        
         if (data.colors && data.colors.length > 0) {
           setSelectedColor(data.colors[0]);
+          // Se a primeira cor tem imagem, define como imagem atual
+          if (data.colors[0].image_url) {
+            const productImages = data.images || [];
+            const colorImages = (data.colors || []).map(c => c.image_url).filter(Boolean);
+            const sizeImages = (data.sizes || []).map(s => s.image_url).filter(Boolean);
+            const allImages = [...productImages, ...colorImages, ...sizeImages].filter((v, i, a) => a.indexOf(v) === i);
+            const colorImageIndex = allImages.findIndex(img => img === data.colors[0].image_url);
+            if (colorImageIndex !== -1) {
+              setCurrentImageIndex(colorImageIndex);
+            }
+          }
         }
         if (data.sizes && data.sizes.length > 0) {
           setSelectedSize(data.sizes[0]);
@@ -55,25 +69,46 @@ export default function ProductDetailPage() {
         const initCustom = {};
         if (data.customization_options) {
           data.customization_options.forEach(opt => {
-            initCustom[opt.name_pt] = '';
+            initCustom[opt.name] = '';
           });
         }
         setCustomizations(initCustom);
       } catch (error) {
         console.error('Error fetching product:', error);
+        toast.error('Erro ao carregar produto');
         navigate('/products');
       } finally {
         setLoading(false);
       }
     };
-    fetchProduct();
+    
+    if (id) {
+      fetchProduct();
+    }
   }, [id, navigate]);
 
   const handleColorSelect = (color, index) => {
     setSelectedColor(color);
+    // Se a cor tem imagem específica, muda para essa imagem
     if (color.image_url) {
-      const imgCount = product.images ? product.images.length : 0;
-      setCurrentImageIndex(imgCount + index);
+      setCurrentImageIndex(0); // Reset to first image, then find the color image
+      const allImages = [...(product.images || []), ...(product.colors || []).map(c => c.image_url).filter(Boolean)];
+      const colorImageIndex = allImages.findIndex(img => img === color.image_url);
+      if (colorImageIndex !== -1) {
+        setCurrentImageIndex(colorImageIndex);
+      }
+    }
+  };
+
+  const handleSizeSelect = (size) => {
+    setSelectedSize(size);
+    // Se o tamanho tem imagem específica, muda para essa imagem
+    if (size.image_url) {
+      const allImages = [...(product.images || []), ...(product.colors || []).map(c => c.image_url).filter(Boolean), ...(product.sizes || []).map(s => s.image_url).filter(Boolean)];
+      const sizeImageIndex = allImages.findIndex(img => img === size.image_url);
+      if (sizeImageIndex !== -1) {
+        setCurrentImageIndex(sizeImageIndex);
+      }
     }
   };
 
@@ -82,15 +117,24 @@ export default function ProductDetailPage() {
     const opts = product.customization_options || [];
     for (let i = 0; i < opts.length; i++) {
       const opt = opts[i];
-      const key = opt.name_pt;
+      const key = opt.name;
       if (opt.required && !customizations[key]) {
         const msg = language === 'pt' 
-          ? `Por favor, preencha: ${opt.name_pt}` 
-          : `Please fill: ${opt.name_en}`;
+          ? `Por favor, preencha: ${opt.name}` 
+          : `Please fill: ${opt.name}`;
         toast.error(msg);
         return;
       }
     }
+
+    // Calculate customization price adjustments
+    const customizationPriceAdjustments = {};
+    opts.forEach(opt => {
+      const customValue = customizations[opt.name];
+      if (customValue && customValue.trim() !== '') {
+        customizationPriceAdjustments[opt.name] = opt.price_modifier || 0;
+      }
+    });
 
     const cartItem = {
       product_id: product.id,
@@ -99,15 +143,17 @@ export default function ProductDetailPage() {
       price: product.base_price,
       image: selectedColor?.image_url || (product.images && product.images[0]) || '',
       quantity,
-      selected_color: selectedColor?.name_pt || null,
+      selected_color: selectedColor?.name || null,
       selected_color_hex: selectedColor?.hex_code || null,
       selected_size: selectedSize?.name || null,
-      size_price_adjustment: selectedSize?.price_adjustment || 0,
-      customizations: { ...customizations }
+      size_price_adjustment: selectedSize?.price_modifier || 0,
+      customizations: { ...customizations },
+      customization_price_adjustments: customizationPriceAdjustments,
+      final_unit_price: finalPrice // Store the calculated final price
     };
 
     addToCart(cartItem);
-    toast.success(language === 'pt' ? 'Adicionado ao carrinho!' : 'Added to cart!');
+    toast.success(t('products.addedToCart'));
   };
 
   if (loading) {
@@ -125,18 +171,64 @@ export default function ProductDetailPage() {
   const name = language === 'pt' ? product.name_pt : product.name_en;
   const description = language === 'pt' ? product.description_pt : product.description_en;
   
-  // Build all images
+  // Build all images with metadata (product images + color images + size images)
   const productImages = product.images || [];
   const colorImages = (product.colors || []).map(c => c.image_url).filter(Boolean);
-  const allImages = [...productImages, ...colorImages].filter((v, i, a) => a.indexOf(v) === i);
+  const sizeImages = (product.sizes || []).map(s => s.image_url).filter(Boolean);
+  const allImages = [...productImages, ...colorImages, ...sizeImages].filter((v, i, a) => a.indexOf(v) === i);
+  
+  // Create image metadata to know which color/size each image belongs to
+  const imageMetadata = allImages.map(imageUrl => {
+    // Check if it's a color image
+    const matchingColor = (product.colors || []).find(c => c.image_url === imageUrl);
+    if (matchingColor) {
+      return { imageUrl, type: 'color', data: matchingColor };
+    }
+    
+    // Check if it's a size image
+    const matchingSize = (product.sizes || []).find(s => s.image_url === imageUrl);
+    if (matchingSize) {
+      return { imageUrl, type: 'size', data: matchingSize };
+    }
+    
+    // It's a product image
+    return { imageUrl, type: 'product', data: null };
+  });
+
+  const handleThumbnailClick = (index) => {
+    setCurrentImageIndex(index);
+    
+    const metadata = imageMetadata[index];
+    if (metadata.type === 'color' && metadata.data) {
+      // Auto-select the color associated with this image
+      setSelectedColor(metadata.data);
+    } else if (metadata.type === 'size' && metadata.data) {
+      // Auto-select the size associated with this image
+      setSelectedSize(metadata.data);
+    }
+  };
   
   const currentImage = allImages[currentImageIndex] || 'https://images.unsplash.com/photo-1690860938359-60128b9b9a2d?w=800';
-  const sizeAdjust = selectedSize?.price_adjustment || 0;
-  const finalPrice = product.base_price + sizeAdjust;
-
+  
+  // Define product arrays first
   const productColors = product.colors || [];
   const productSizes = product.sizes || [];
   const productCustomOpts = product.customization_options || [];
+  
+  // Calculate price adjustments
+  const sizeAdjust = selectedSize?.price_modifier || 0;
+  
+  // Calculate customization adjustments
+  const customizationAdjust = productCustomOpts.reduce((total, opt) => {
+    const customValue = customizations[opt.name];
+    // Only add price if the customization field has content
+    if (customValue && customValue.trim() !== '') {
+      return total + (opt.price_modifier || 0);
+    }
+    return total;
+  }, 0);
+  
+  const finalPrice = product.base_price + sizeAdjust + customizationAdjust;
 
   return (
     <Layout>
@@ -167,20 +259,43 @@ export default function ProductDetailPage() {
               {/* Thumbnails */}
               {allImages.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-2">
-                  {allImages.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                        currentImageIndex === index 
-                          ? 'border-blue-600' 
-                          : 'border-transparent hover:border-slate-300'
-                      }`}
-                      data-testid={`thumbnail-${index}`}
-                    >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
+                  {allImages.map((img, index) => {
+                    const metadata = imageMetadata[index];
+                    const isColorImage = metadata.type === 'color';
+                    const isSizeImage = metadata.type === 'size';
+                    
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleThumbnailClick(index)}
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all relative ${
+                          currentImageIndex === index 
+                            ? 'border-blue-600 scale-105 shadow-lg' 
+                            : 'border-transparent hover:border-slate-300 hover:scale-102'
+                        }`}
+                        data-testid={`thumbnail-${index}`}
+                        title={
+                          isColorImage ? `Clique para selecionar cor: ${metadata.data.name}` :
+                          isSizeImage ? `Clique para selecionar tamanho: ${metadata.data.name}` :
+                          'Imagem do produto'
+                        }
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        
+                        {/* Visual indicator for color/size images */}
+                        {isColorImage && (
+                          <div className="absolute bottom-1 left-1 w-3 h-3 rounded-full border border-white shadow-sm"
+                               style={{ backgroundColor: metadata.data.hex_code }}
+                          />
+                        )}
+                        {isSizeImage && (
+                          <div className="absolute bottom-1 right-1 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded font-medium shadow-sm">
+                            {metadata.data.name.split(' ')[0].charAt(0)}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -200,14 +315,29 @@ export default function ProductDetailPage() {
               </p>
 
               {/* Price */}
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-slate-900 dark:text-white" data-testid="product-price">
-                  €{finalPrice.toFixed(2)}
-                </span>
-                {sizeAdjust > 0 && (
-                  <span className="text-sm text-slate-500">
-                    ({t('common.from')} €{product.base_price.toFixed(2)})
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-3xl font-bold text-slate-900 dark:text-white" data-testid="product-price">
+                    €{finalPrice.toFixed(2)}
                   </span>
+                  {(sizeAdjust > 0 || customizationAdjust > 0) && (
+                    <span className="text-sm text-slate-500">
+                      ({t('common.from')} €{product.base_price.toFixed(2)})
+                    </span>
+                  )}
+                </div>
+                
+                {/* Price breakdown */}
+                {(sizeAdjust > 0 || customizationAdjust > 0) && (
+                  <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                    <div>Preço base: €{product.base_price.toFixed(2)}</div>
+                    {sizeAdjust > 0 && (
+                      <div>Tamanho ({selectedSize?.name}): +€{sizeAdjust.toFixed(2)}</div>
+                    )}
+                    {customizationAdjust > 0 && (
+                      <div>Personalizações: +€{customizationAdjust.toFixed(2)}</div>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -215,7 +345,7 @@ export default function ProductDetailPage() {
               {productColors.length > 0 && (
                 <div className="space-y-3">
                   <Label className="text-slate-900 dark:text-white font-medium">
-                    {t('products.color')}: {selectedColor && (language === 'pt' ? selectedColor.name_pt : selectedColor.name_en)}
+                    {t('products.color')}: {selectedColor && selectedColor.name}
                   </Label>
                   <div className="flex flex-wrap gap-3">
                     {productColors.map((color, index) => (
@@ -228,7 +358,7 @@ export default function ProductDetailPage() {
                             : 'border-slate-200 dark:border-slate-600 hover:scale-105'
                         }`}
                         style={{ backgroundColor: color.hex_code }}
-                        title={language === 'pt' ? color.name_pt : color.name_en}
+                        title={color.name}
                         data-testid={`color-${color.hex_code}`}
                       >
                         {selectedColor?.hex_code === color.hex_code && (
@@ -252,20 +382,29 @@ export default function ProductDetailPage() {
                     {productSizes.map((size, index) => (
                       <button
                         key={index}
-                        onClick={() => setSelectedSize(size)}
-                        className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                        onClick={() => handleSizeSelect(size)}
+                        className={`px-4 py-3 rounded-lg border-2 font-medium transition-all ${
                           selectedSize?.name === size.name
                             ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600'
                             : 'border-slate-200 dark:border-slate-600 hover:border-blue-300'
                         }`}
                         data-testid={`size-${size.name}`}
                       >
-                        {size.name}
-                        {size.price_adjustment > 0 && (
-                          <span className="text-xs ml-1 text-slate-500">
-                            (+€{size.price_adjustment.toFixed(2)})
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {size.image_url && (
+                            <div className="w-6 h-6 rounded border border-slate-300 overflow-hidden">
+                              <img src={size.image_url} alt={size.name} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="text-left">
+                            <div>{size.name}</div>
+                            {size.price_modifier > 0 && (
+                              <div className="text-xs text-slate-500">
+                                +€{size.price_modifier.toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -281,18 +420,23 @@ export default function ProductDetailPage() {
                   {productCustomOpts.map((opt, index) => (
                     <div key={index} className="space-y-2">
                       <Label className="text-sm">
-                        {language === 'pt' ? opt.name_pt : opt.name_en}
+                        {opt.name}
                         {opt.required && <span className="text-red-500 ml-1">*</span>}
+                        {opt.price_modifier > 0 && (
+                          <span className="text-xs text-slate-500 ml-2">
+                            (+€{opt.price_modifier.toFixed(2)})
+                          </span>
+                        )}
                       </Label>
                       <Input
                         type={opt.type === 'number' ? 'number' : 'text'}
-                        value={customizations[opt.name_pt] || ''}
+                        value={customizations[opt.name] || ''}
                         onChange={(e) => setCustomizations(prev => ({
                           ...prev,
-                          [opt.name_pt]: e.target.value
+                          [opt.name]: e.target.value
                         }))}
                         maxLength={opt.max_length || undefined}
-                        placeholder={language === 'pt' ? opt.name_pt : opt.name_en}
+                        placeholder={opt.name}
                         data-testid={`customization-${index}`}
                       />
                     </div>

@@ -1,6 +1,5 @@
-/* Pulgax 3D Store - Custom Styles */
+/* Custom styles for Pulgax 3D Store */
 
-/* Subtle animations that feel more natural */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -39,7 +38,6 @@
   animation-delay: 0.2s;
 }
 
-/* Custom scrollbar for webkit browsers */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -57,7 +55,6 @@
   background: #94a3b8;
 }
 
-/* Dark mode scrollbar */
 .dark ::-webkit-scrollbar-track {
   background: #1e293b;
 }
@@ -70,24 +67,20 @@
   background: #64748b;
 }
 
-/* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom focus styles */
 .focus-visible:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
-/* Subtle hover effects */
 .hover-lift:hover {
   transform: translateY(-2px);
   transition: transform 0.2s ease-out;
 }
 
-/* Custom gradient backgrounds */
 .gradient-blue {
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
 }
@@ -96,14 +89,12 @@ html {
   background: linear-gradient(135deg, #64748b 0%, #334155 100%);
 }
 
-/* Print-specific styles (just in case) */
 @media print {
   .no-print {
     display: none !important;
   }
 }
 
-/* Accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-slide-up,
@@ -116,26 +107,7 @@ html {
   }
 }
 
-/* Custom button hover effects */
 .btn-hover-scale:hover {
   transform: scale(1.02);
   transition: transform 0.15s ease-out;
-}
-
-/* Loading states */
-.loading-dots::after {
-  content: '';
-  animation: loading-dots 1.5s infinite;
-}
-
-@keyframes loading-dots {
-  0%, 20% {
-    content: '.';
-  }
-  40% {
-    content: '..';
-  }
-  60%, 100% {
-    content: '...';
-  }
 }

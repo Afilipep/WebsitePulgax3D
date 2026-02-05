@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { useLanguage } from '../context/LanguageContext';
+import api from '../api';
 import { 
   ArrowRight, 
   Gift, 
@@ -24,13 +24,9 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-// TODO: Adicionar mais opções de pagamento (PayPal, Multibanco)
-// FIXME: Melhorar a responsividade em tablets
 export default function HomePage() {
-  const { t } = useLanguage();
   const location = useLocation();
+  const { t } = useLanguage();
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
@@ -51,24 +47,17 @@ export default function HomePage() {
         }
       }, 100);
     }
-    
-    // Easter egg: Console message for curious developers
-    console.log('🎯 Olá, desenvolvedor curioso! 👋');
-    console.log('Este site foi feito com muito carinho para a Pulgax 3D Store.');
-    console.log('Se estás a ver isto, provavelmente gostas de código tanto quanto nós! 😄');
-    console.log('Contacta-nos se quiseres colaborar: @pulgaxstore');
   }, [location.hash]);
 
   const handleContactSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await axios.post(`${API}/contact`, contactForm);
-      toast.success('Mensagem enviada! Vamos responder em breve 😊');
+      await api.createMessage(contactForm);
+      toast.success(t('contact.form.success'));
       setContactForm({ name: '', email: '', phone: '', subject: '', message: '' });
     } catch (error) {
-      // NOTE: Melhorar as mensagens de erro mais tarde
-      toast.error('Ups! Algo correu mal. Tenta novamente ou contacta-nos pelo Instagram.');
+      toast.error(t('contact.form.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -100,15 +89,15 @@ export default function HomePage() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 rounded-full mb-6 animate-fade-in">
               <Sparkles className="w-4 h-4 text-blue-400" />
-              <span className="text-blue-300 text-sm font-medium">Impressão 3D Artesanal</span>
+              <span className="text-blue-300 text-sm font-medium">{t('hero.badge')}</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-6 animate-slide-up">
-              Criamos o que imaginas em <span className="text-blue-400">3D</span>
+              {t('hero.title')}
             </h1>
             
             <p className="text-lg text-slate-300 mb-8 leading-relaxed animate-slide-up stagger-1">
-              Da ideia à realidade. Especializamo-nos em impressão 3D personalizada para decoração, utilitários e presentes únicos. Cada peça é criada com paixão e atenção ao detalhe.
+              {t('hero.subtitle')}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 animate-slide-up stagger-2">
@@ -118,7 +107,7 @@ export default function HomePage() {
                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 group"
                   data-testid="hero-cta-products"
                 >
-                  Ver Produtos
+                  {t('hero.cta')}
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
@@ -129,7 +118,7 @@ export default function HomePage() {
                   className="border-slate-500 text-white hover:bg-white/10"
                   data-testid="hero-cta-contact"
                 >
-                  Falar Connosco
+                  {t('hero.ctaSecondary')}
                 </Button>
               </a>
             </div>
@@ -167,15 +156,13 @@ export default function HomePage() {
             {/* Content */}
             <div>
               <span className="text-blue-600 font-medium text-sm uppercase tracking-wider">
-                A Nossa História
+                {t('about.subtitle')}
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2 mb-6">
-                Paixão pela Impressão 3D
+                {t('about.title')}
               </h2>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-8">
-                Começámos como um hobby e transformámos a nossa paixão pela tecnologia 3D num negócio. 
-                Cada peça que criamos é única, pensada especialmente para ti. Desde pequenos detalhes decorativos 
-                até utilitários do dia-a-dia, trabalhamos com materiais de qualidade e atenção ao pormenor.
+                {t('about.description')}
               </p>
 
               {/* Values */}
@@ -186,10 +173,10 @@ export default function HomePage() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-slate-900 dark:text-white">
-                      Inovação Constante
+                      {t('about.values.innovation')}
                     </h4>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Sempre a explorar novas técnicas e materiais para criar peças ainda melhores
+                      {t('about.values.innovationDesc')}
                     </p>
                   </div>
                 </div>
@@ -199,10 +186,10 @@ export default function HomePage() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-slate-900 dark:text-white">
-                      Qualidade Garantida
+                      {t('about.values.quality')}
                     </h4>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Cada peça passa por controlo de qualidade rigoroso antes de chegar às tuas mãos
+                      {t('about.values.qualityDesc')}
                     </p>
                   </div>
                 </div>
@@ -212,10 +199,10 @@ export default function HomePage() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-slate-900 dark:text-white">
-                      100% Personalizado
+                      {t('about.values.personalization')}
                     </h4>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Tens uma ideia? Nós tornamo-la realidade. Personalizações sem limites
+                      {t('about.values.personalizationDesc')}
                     </p>
                   </div>
                 </div>
@@ -230,10 +217,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-blue-600 font-medium text-sm uppercase tracking-wider">
-              O Que Fazemos
+              {t('services.subtitle')}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2">
-              Os Nossos Serviços
+              {t('services.title')}
             </h2>
           </div>
 
@@ -243,11 +230,10 @@ export default function HomePage() {
                 <Gift className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
-                Presentes Únicos
+                {t('services.gifts.title')}
               </h3>
               <p className="text-slate-500 dark:text-slate-400">
-                Cria presentes verdadeiramente especiais. Desde porta-chaves personalizados a decorações temáticas, 
-                cada presente conta uma história única.
+                {t('services.gifts.description')}
               </p>
             </div>
             
@@ -256,11 +242,10 @@ export default function HomePage() {
                 <Palette className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
-                Peças Personalizadas
+                {t('services.custom.title')}
               </h3>
               <p className="text-slate-500 dark:text-slate-400">
-                Tens uma ideia específica? Trabalhamos contigo desde o conceito até à peça final. 
-                Cores, tamanhos e detalhes completamente à tua medida.
+                {t('services.custom.description')}
               </p>
             </div>
             
@@ -269,11 +254,10 @@ export default function HomePage() {
                 <Building2 className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
-                Soluções para Empresas
+                {t('services.business.title')}
               </h3>
               <p className="text-slate-500 dark:text-slate-400">
-                Protótipos, peças promocionais ou soluções técnicas. Ajudamos empresas a materializar 
-                as suas ideias com rapidez e qualidade.
+                {t('services.business.description')}
               </p>
             </div>
           </div>
@@ -285,10 +269,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-blue-400 font-medium text-sm uppercase tracking-wider">
-              Como Trabalhamos
+              {t('process.subtitle')}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-white mt-2">
-              Do Conceito à Realidade
+              {t('process.title')}
             </h2>
           </div>
 
@@ -301,10 +285,10 @@ export default function HomePage() {
                 <MessageSquare className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Conversa Inicial
+                {t('process.steps.step1.title')}
               </h3>
               <p className="text-slate-400 text-sm">
-                Falamos sobre a tua ideia, necessidades e preferências. Sem compromisso.
+                {t('process.steps.step1.description')}
               </p>
             </div>
             
@@ -316,10 +300,10 @@ export default function HomePage() {
                 <Layers className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Design & Orçamento
+                {t('process.steps.step2.title')}
               </h3>
               <p className="text-slate-400 text-sm">
-                Criamos o design 3D e apresentamos um orçamento transparente e justo.
+                {t('process.steps.step2.description')}
               </p>
             </div>
             
@@ -331,10 +315,10 @@ export default function HomePage() {
                 <Printer className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Impressão 3D
+                {t('process.steps.step3.title')}
               </h3>
               <p className="text-slate-400 text-sm">
-                Imprimimos a tua peça com materiais de qualidade e acabamentos perfeitos.
+                {t('process.steps.step3.description')}
               </p>
             </div>
             
@@ -346,10 +330,10 @@ export default function HomePage() {
                 <Truck className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Entrega Rápida
+                {t('process.steps.step4.title')}
               </h3>
               <p className="text-slate-400 text-sm">
-                Enviamos ou entregamos a tua peça com todo o cuidado e rapidez.
+                {t('process.steps.step4.description')}
               </p>
             </div>
           </div>
@@ -361,27 +345,26 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-blue-600 font-medium text-sm uppercase tracking-wider">
-              Formas de Pagamento
+              {t('payment.subtitle')}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2">
-              Paga Como Preferires
+              {t('payment.title')}
             </h2>
           </div>
 
           <div className="flex flex-wrap justify-center gap-6">
             <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-xl">
               <Smartphone className="w-6 h-6 text-blue-600" />
-              <span className="font-medium text-slate-900 dark:text-white">MB WAY</span>
+              <span className="font-medium text-slate-900 dark:text-white">{t('payment.mbway')}</span>
             </div>
             <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-xl">
               <Banknote className="w-6 h-6 text-blue-600" />
-              <span className="font-medium text-slate-900 dark:text-white">Transferência</span>
+              <span className="font-medium text-slate-900 dark:text-white">{t('payment.transfer')}</span>
             </div>
             <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-xl">
               <CreditCard className="w-6 h-6 text-blue-600" />
-              <span className="font-medium text-slate-900 dark:text-white">Vinted</span>
+              <span className="font-medium text-slate-900 dark:text-white">{t('payment.vinted')}</span>
             </div>
-          </div>
           </div>
         </div>
       </section>
@@ -393,20 +376,19 @@ export default function HomePage() {
             {/* Info */}
             <div>
               <span className="text-blue-600 font-medium text-sm uppercase tracking-wider">
-                Vamos Conversar
+                {t('contact.subtitle')}
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2 mb-6">
-                Tens uma Ideia? Fala Connosco!
+                {t('contact.title')}
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-8">
-                Estamos sempre disponíveis para ouvir as tuas ideias e ajudar-te a torná-las realidade. 
-                Seja um projeto simples ou complexo, adoramos novos desafios!
+                {t('contact.description')}
               </p>
 
               {/* Social Links */}
               <div>
                 <h4 className="font-semibold text-slate-900 dark:text-white mb-4">
-                  Segue-nos nas Redes Sociais
+                  {t('contact.social')}
                 </h4>
                 <div className="flex gap-4">
                   <a 
@@ -440,7 +422,7 @@ export default function HomePage() {
               <form onSubmit={handleContactSubmit} className="space-y-6" data-testid="contact-form">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nome *</Label>
+                    <Label htmlFor="name">{t('contact.form.name')} *</Label>
                     <Input
                       id="name"
                       name="name"
@@ -451,7 +433,7 @@ export default function HomePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">{t('contact.form.email')} *</Label>
                     <Input
                       id="email"
                       name="email"
@@ -465,7 +447,7 @@ export default function HomePage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Telemóvel</Label>
+                    <Label htmlFor="phone">{t('contact.form.phone')}</Label>
                     <Input
                       id="phone"
                       name="phone"
@@ -475,7 +457,7 @@ export default function HomePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="subject">Assunto *</Label>
+                    <Label htmlFor="subject">{t('contact.form.subject')} *</Label>
                     <Input
                       id="subject"
                       name="subject"
@@ -487,7 +469,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="message">Mensagem *</Label>
+                  <Label htmlFor="message">{t('contact.form.message')} *</Label>
                   <Textarea
                     id="message"
                     name="message"
@@ -495,7 +477,7 @@ export default function HomePage() {
                     onChange={handleInputChange}
                     rows={5}
                     required
-                    placeholder="Conta-nos a tua ideia... Quanto mais detalhes, melhor!"
+                    placeholder={t('contact.form.messagePlaceholder')}
                     data-testid="contact-message"
                   />
                 </div>
@@ -505,7 +487,7 @@ export default function HomePage() {
                   disabled={isSubmitting}
                   data-testid="contact-submit"
                 >
-                  {isSubmitting ? 'A enviar...' : 'Enviar Mensagem'}
+                  {isSubmitting ? t('contact.form.sending') : t('contact.form.send')}
                 </Button>
               </form>
             </div>

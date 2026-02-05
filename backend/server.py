@@ -17,6 +17,13 @@ import base64
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -132,11 +139,15 @@ class CartItem(BaseModel):
 class OrderCreate(BaseModel):
     customer_name: str
     customer_email: EmailStr
-    customer_phone: str
+    customer_phone: Optional[str] = ""
+    customer_id: Optional[str] = None
     shipping_address: str
-    items: List[CartItem]
     payment_method: str
+    payment_details: Optional[Dict[str, Any]] = {}
+    shipping_method: Optional[str] = None
+    shipping_cost: Optional[float] = 0.0
     notes: Optional[str] = ""
+    items: List[CartItem]
     total_amount: float
 
 class OrderResponse(BaseModel):
@@ -146,13 +157,42 @@ class OrderResponse(BaseModel):
     customer_name: str
     customer_email: str
     customer_phone: str
+    customer_id: Optional[str] = None
     shipping_address: str
-    items: List[Dict[str, Any]]
     payment_method: str
+    payment_details: Optional[Dict[str, Any]] = {}
+    shipping_method: Optional[str] = None
+    shipping_cost: Optional[float] = 0.0
+    items: List[Dict[str, Any]]
     notes: str
     total_amount: float
+    calculated_total: Optional[float] = None
     status: str
     created_at: str
+
+# Customer models
+class CustomerCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    phone: Optional[str] = ""
+
+class CustomerLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class CustomerResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    email: str
+    phone: str
+    created_at: str
+
+class CustomerTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    customer: CustomerResponse
 
 class ContactMessage(BaseModel):
     name: str
@@ -201,8 +241,133 @@ async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+async def get_current_customer(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        customer_id = payload.get("sub")
+        customer = await db.customers.find_one({"id": customer_id}, {"_id": 0, "password": 0})
+        if not customer:
+            raise HTTPException(status_code=401, detail="Customer not found")
+        return customer
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def get_optional_customer(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))):
+    if not credentials:
+        return None
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        customer_id = payload.get("sub")
+        customer = await db.customers.find_one({"id": customer_id}, {"_id": 0, "password": 0})
+        return customer
+    except:
+        return None
+
 def generate_order_number() -> str:
     return f"PX-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+
+async def validate_and_calculate_order(items: List[CartItem]) -> tuple[List[Dict[str, Any]], float]:
+    """Validate products and calculate total"""
+    validated_items = []
+    total = 0.0
+    
+    for item in items:
+        # Get product from database
+        product = await db.products.find_one({"id": item.product_id, "active": True}, {"_id": 0})
+        if not product:
+            raise HTTPException(status_code=400, detail=f"Product {item.product_id} not found or inactive")
+        
+        # Calculate item price
+        item_price = product["base_price"]
+        
+        # Add size price adjustment if applicable
+        if item.selected_size and product.get("sizes"):
+            size_info = next((s for s in product["sizes"] if s["name"] == item.selected_size), None)
+            if size_info:
+                item_price += size_info.get("price_adjustment", 0.0)
+        
+        # Validate color if selected
+        if item.selected_color and product.get("colors"):
+            color_exists = any(c["name_pt"] == item.selected_color or c["name_en"] == item.selected_color 
+                             for c in product["colors"])
+            if not color_exists:
+                raise HTTPException(status_code=400, detail=f"Invalid color for product {item.product_id}")
+        
+        # Create validated item
+        validated_item = {
+            "product_id": item.product_id,
+            "product_name_pt": product["name_pt"],
+            "product_name_en": product["name_en"],
+            "quantity": item.quantity,
+            "unit_price": item_price,
+            "total_price": item_price * item.quantity,
+            "selected_color": item.selected_color,
+            "selected_size": item.selected_size,
+            "customizations": item.customizations or {}
+        }
+        
+        validated_items.append(validated_item)
+        total += validated_item["total_price"]
+    
+    return validated_items, total
+
+# ============== CUSTOMER AUTH ROUTES ==============
+
+@api_router.post("/customer/register", response_model=CustomerTokenResponse)
+async def register_customer(customer: CustomerCreate):
+    # Check if email already exists
+    if await db.customers.find_one({"email": customer.email}):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    customer_id = str(uuid.uuid4())
+    customer_doc = {
+        "id": customer_id,
+        "email": customer.email,
+        "password": hash_password(customer.password),
+        "name": customer.name,
+        "phone": customer.phone,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.customers.insert_one(customer_doc)
+    
+    token = create_token(customer_id)
+    customer_response = CustomerResponse(
+        id=customer_id,
+        email=customer.email,
+        name=customer.name,
+        phone=customer.phone,
+        created_at=customer_doc["created_at"]
+    )
+    return CustomerTokenResponse(access_token=token, customer=customer_response)
+
+@api_router.post("/customer/login", response_model=CustomerTokenResponse)
+async def login_customer(credentials: CustomerLogin):
+    customer = await db.customers.find_one({"email": credentials.email})
+    if not customer or not verify_password(credentials.password, customer["password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    token = create_token(customer["id"])
+    customer_response = CustomerResponse(
+        id=customer["id"],
+        email=customer["email"],
+        name=customer["name"],
+        phone=customer.get("phone", ""),
+        created_at=customer["created_at"]
+    )
+    return CustomerTokenResponse(access_token=token, customer=customer_response)
+
+@api_router.get("/customer/profile", response_model=CustomerResponse)
+async def get_customer_profile(customer = Depends(get_current_customer)):
+    return CustomerResponse(**customer)
+
+@api_router.get("/customer/orders", response_model=List[OrderResponse])
+async def get_customer_orders(customer = Depends(get_current_customer)):
+    orders = await db.orders.find({"customer_id": customer["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return [OrderResponse(**order) for order in orders]
 
 # ============== ADMIN AUTH ROUTES ==============
 
@@ -354,17 +519,50 @@ async def delete_product(product_id: str, admin = Depends(get_current_admin)):
 # ============== ORDER ROUTES ==============
 
 @api_router.post("/orders", response_model=OrderResponse)
-async def create_order(order: OrderCreate):
-    order_id = str(uuid.uuid4())
-    order_doc = {
-        "id": order_id,
-        "order_number": generate_order_number(),
-        **order.model_dump(),
-        "status": "pending",
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.orders.insert_one(order_doc)
-    return OrderResponse(**order_doc)
+async def create_order(order: OrderCreate, customer = Depends(get_optional_customer)):
+    try:
+        # Validate products and calculate totals
+        validated_items, calculated_total = await validate_and_calculate_order(order.items)
+        
+        # Add shipping cost to calculated total
+        total_with_shipping = calculated_total + (order.shipping_cost or 0.0)
+        
+        # Validate total amount (allow small rounding differences)
+        if abs(total_with_shipping - order.total_amount) > 0.01:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Total amount mismatch. Expected: €{total_with_shipping:.2f}, Received: €{order.total_amount:.2f}"
+            )
+        
+        order_id = str(uuid.uuid4())
+        order_doc = {
+            "id": order_id,
+            "order_number": generate_order_number(),
+            "customer_name": order.customer_name,
+            "customer_email": order.customer_email,
+            "customer_phone": order.customer_phone or "",
+            "customer_id": customer["id"] if customer else None,
+            "shipping_address": order.shipping_address,
+            "payment_method": order.payment_method,
+            "payment_details": order.payment_details or {},
+            "shipping_method": order.shipping_method,
+            "shipping_cost": order.shipping_cost or 0.0,
+            "items": validated_items,
+            "notes": order.notes or "",
+            "total_amount": order.total_amount,
+            "calculated_total": total_with_shipping,
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.orders.insert_one(order_doc)
+        return OrderResponse(**order_doc)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating order: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error processing order")
 
 @api_router.get("/orders", response_model=List[OrderResponse])
 async def get_orders(admin = Depends(get_current_admin)):
@@ -472,13 +670,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

@@ -1,93 +1,184 @@
-// Real API client for Pulgax 3D Store
-import axios from 'axios';
-
+// Real API client for backend server
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 
-// Create axios instance
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Helper function to make API requests
+const apiRequest = async (endpoint, options = {}) => {
+  const url = `${API_BASE_URL}/api${endpoint}`;
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  };
 
-// Add request interceptor to include auth token
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+  // Add auth token if available
+  const adminToken = localStorage.getItem('pulgax-admin-token');
+  const customerToken = localStorage.getItem('pulgax-customer-token');
+  
+  if (adminToken && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
+  } else if (customerToken && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${customerToken}`;
   }
-);
 
-// Add response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_admin');
-      window.location.href = '/admin';
+  try {
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Network error' }));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
     }
-    return Promise.reject(error);
+    
+    return response.json();
+  } catch (error) {
+    console.error('API Request failed:', {
+      url,
+      method: config.method || 'GET',
+      status: error.status,
+      message: error.message
+    });
+    throw error;
   }
-);
+};
 
 // API endpoints
 export const api = {
   // Admin authentication
-  adminRegister: (data) => apiClient.post('/api/admin/register', data),
-  adminLogin: (data) => apiClient.post('/api/admin/login', data),
-  adminMe: () => apiClient.get('/api/admin/me'),
+  adminRegister: (data) => apiRequest('/admin/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  adminLogin: (data) => apiRequest('/admin/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  adminMe: () => apiRequest('/admin/me'),
+
+  // Customer authentication
+  customerRegister: (data) => apiRequest('/customer/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  customerLogin: (data) => apiRequest('/customer/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  googleAuth: (data) => apiRequest('/customer/google', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  getCustomerProfile: () => apiRequest('/customer/profile'),
+  
+  updateCustomerAddress: (data) => apiRequest('/customer/address', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  
+  getCustomerOrders: () => apiRequest('/customer/orders'),
 
   // Categories
-  getCategories: () => apiClient.get('/api/categories'),
-  createCategory: (data) => apiClient.post('/api/categories', data),
-  updateCategory: (id, data) => apiClient.put(`/api/categories/${id}`, data),
-  deleteCategory: (id) => apiClient.delete(`/api/categories/${id}`),
+  getCategories: () => apiRequest('/categories'),
+  
+  createCategory: (data) => apiRequest('/categories', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  updateCategory: (id, data) => apiRequest(`/categories/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  
+  deleteCategory: (id) => apiRequest(`/categories/${id}`, {
+    method: 'DELETE',
+  }),
 
   // Products
-  getProducts: (params = {}) => apiClient.get('/api/products', { params }),
-  getAllProducts: () => apiClient.get('/api/products/all'),
-  getProduct: (id) => apiClient.get(`/api/products/${id}`),
-  createProduct: (data) => apiClient.post('/api/products', data),
-  updateProduct: (id, data) => apiClient.put(`/api/products/${id}`, data),
-  deleteProduct: (id) => apiClient.delete(`/api/products/${id}`),
+  getProducts: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiRequest(`/products${queryString ? `?${queryString}` : ''}`);
+  },
+  
+  getAllProducts: () => apiRequest('/products/all'),
+  
+  getProduct: (id) => apiRequest(`/products/${id}`),
+  
+  createProduct: (data) => apiRequest('/products', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  updateProduct: (id, data) => apiRequest(`/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  
+  deleteProduct: (id) => apiRequest(`/products/${id}`, {
+    method: 'DELETE',
+  }),
 
   // Orders
-  getOrders: () => apiClient.get('/api/orders'),
-  getOrder: (id) => apiClient.get(`/api/orders/${id}`),
-  createOrder: (data) => apiClient.post('/api/orders', data),
-  updateOrderStatus: (id, status) => apiClient.put(`/api/orders/${id}/status?status=${status}`),
+  getOrders: () => apiRequest('/orders'),
+  
+  getOrder: (id) => apiRequest(`/orders/${id}`),
+  
+  getOrderDetails: (id) => apiRequest(`/orders/${id}`),
+  
+  createOrder: (data) => apiRequest('/orders', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }).then(response => ({ data: response })), // Wrap response to match expected structure
+  
+  updateOrderStatus: (id, status, note = '') => apiRequest(`/orders/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status, note }),
+  }),
+  
+  processRefund: (id, refundData) => apiRequest(`/orders/${id}/refund`, {
+    method: 'POST',
+    body: JSON.stringify(refundData),
+  }),
 
   // Contact messages
-  getMessages: () => apiClient.get('/api/contact'),
-  createMessage: (data) => apiClient.post('/api/contact', data),
-  markMessageRead: (id) => apiClient.put(`/api/contact/${id}/read`),
-  deleteMessage: (id) => apiClient.delete(`/api/contact/${id}`),
+  getMessages: () => apiRequest('/contact'),
+  
+  createMessage: (data) => apiRequest('/contact', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
+  markMessageRead: (id) => apiRequest(`/contact/${id}/read`, {
+    method: 'PUT',
+  }),
+  
+  deleteMessage: (id) => apiRequest(`/contact/${id}`, {
+    method: 'DELETE',
+  }),
 
+  
   // Stats
-  getStats: () => apiClient.get('/api/stats'),
+  getStats: () => apiRequest('/stats'),
 
-  // Image upload
+  // Data validation
+  validateData: () => apiRequest('/validate'),
+
+  // Image upload (simplified - in production would upload to cloud storage)
   uploadImage: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return apiClient.post('/api/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    return Promise.resolve({
+      data: {
+        url: URL.createObjectURL(file) // Create a local URL for the image
+      }
     });
   },
 
   // Health check
-  healthCheck: () => apiClient.get('/api/'),
+  healthCheck: () => apiRequest('/'),
 };
 
 export default api;

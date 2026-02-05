@@ -51,9 +51,21 @@ export const CartProvider = ({ children }) => {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const cartTotal = cart.reduce((sum, item) => {
+    // Use final_unit_price if available (includes all adjustments)
+    if (item.final_unit_price) {
+      return sum + (item.final_unit_price * item.quantity);
+    }
+    
+    // Fallback to manual calculation
     const basePrice = item.price || 0;
     const sizeAdjustment = item.size_price_adjustment || 0;
-    return sum + ((basePrice + sizeAdjustment) * item.quantity);
+    
+    // Calculate customization adjustments
+    const customizationAdjustment = Object.values(item.customization_price_adjustments || {})
+      .reduce((total, adjustment) => total + (adjustment || 0), 0);
+    
+    const finalPrice = basePrice + sizeAdjustment + customizationAdjustment;
+    return sum + (finalPrice * item.quantity);
   }, 0);
 
   return (

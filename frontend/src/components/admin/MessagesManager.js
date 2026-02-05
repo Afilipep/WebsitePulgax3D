@@ -8,6 +8,9 @@ import api from '../../api';
 export function MessagesManager({ messages, onUpdate }) {
   const { t, language } = useLanguage();
 
+  // Safe fallback for messages
+  const safeMessages = Array.isArray(messages) ? messages : [];
+
   const markAsRead = async (id) => {
     try {
       await api.markMessageRead(id);
@@ -35,14 +38,14 @@ export function MessagesManager({ messages, onUpdate }) {
       </h2>
 
       <div className="space-y-4">
-        {messages.length === 0 ? (
+        {safeMessages.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center">
             <MessageSquare className="w-12 h-12 mx-auto text-slate-300 mb-4" />
             <p className="text-slate-500">
               {language === 'pt' ? 'Nenhuma mensagem' : 'No messages'}
             </p>
           </div>
-        ) : messages.map((msg) => (
+        ) : safeMessages.map((msg) => (
           <div
             key={msg.id}
             className={`bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm ${!msg.read ? 'ring-2 ring-blue-500' : ''}`}

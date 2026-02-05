@@ -7,18 +7,19 @@ import { Button } from '../components/ui/button';
 import { Toaster } from '../components/ui/sonner';
 import {
   LayoutDashboard, Package, FolderOpen, ShoppingCart, MessageSquare,
-  LogOut, Printer, Moon, Sun, Globe
+  LogOut, Printer, Moon, Sun, Globe, Shield
 } from 'lucide-react';
 import { DashboardStats } from '../components/admin/DashboardStats';
 import { CategoriesManager } from '../components/admin/CategoriesManager';
 import { ProductsManager } from '../components/admin/ProductsManager';
 import { OrdersManager } from '../components/admin/OrdersManager';
 import { MessagesManager } from '../components/admin/MessagesManager';
+import { DataValidation } from '../components/admin/DataValidation';
 import api from '../api';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { t, language, toggleLanguage } = useLanguage();
+  const { t, toggleLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { admin, token, logout, isAuthenticated } = useAuth();
   
@@ -32,8 +33,6 @@ export default function AdminDashboardPage() {
   const fetchAllData = useCallback(async () => {
     if (!token) return;
     try {
-      console.log('📊 Fetching dashboard data from FastAPI');
-      
       const results = await Promise.all([
         api.getStats(),
         api.getCategories(),
@@ -42,19 +41,12 @@ export default function AdminDashboardPage() {
         api.getMessages()
       ]);
       
-      setStats(results[0].data);
-      setCategories(results[1].data);
-      setProducts(results[2].data);
-      setOrders(results[3].data);
-      setMessages(results[4].data);
-      
-      console.log('📊 Dashboard data loaded:', {
-        stats: results[0].data,
-        categories: results[1].data.length,
-        products: results[2].data.length,
-        orders: results[3].data.length,
-        messages: results[4].data.length
-      });
+      // Handle API responses safely - some APIs might return data directly, others in a data property
+      setStats(results[0]?.data || results[0] || null);
+      setCategories(Array.isArray(results[1]?.data) ? results[1].data : Array.isArray(results[1]) ? results[1] : []);
+      setProducts(Array.isArray(results[2]?.data) ? results[2].data : Array.isArray(results[2]) ? results[2] : []);
+      setOrders(Array.isArray(results[3]?.data) ? results[3].data : Array.isArray(results[3]) ? results[3] : []);
+      setMessages(Array.isArray(results[4]?.data) ? results[4].data : Array.isArray(results[4]) ? results[4] : []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       if (error.response?.status === 401) {
@@ -87,6 +79,7 @@ export default function AdminDashboardPage() {
     { id: 'products', icon: Package, label: t('admin.dashboard.products') },
     { id: 'orders', icon: ShoppingCart, label: t('admin.dashboard.orders') },
     { id: 'messages', icon: MessageSquare, label: t('admin.dashboard.messages') },
+    { id: 'validation', icon: Shield, label: 'Validação de Dados' },
   ];
 
   return (
@@ -96,8 +89,17 @@ export default function AdminDashboardPage() {
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 text-white p-6 hidden md:block">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Printer className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl overflow-hidden bg-blue-600 flex items-center justify-center">
+            <img 
+              src="/logo.jpg" 
+              alt="Pulgax 3D Logo" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <Printer className="w-5 h-5 text-white" style={{ display: 'none' }} />
           </div>
           <div>
             <h1 className="font-semibold">Pulgax 3D</h1>
@@ -149,8 +151,17 @@ export default function AdminDashboardPage() {
         {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-              <Printer className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden bg-blue-600 flex items-center justify-center">
+              <img 
+                src="/logo.jpg" 
+                alt="Pulgax 3D Logo" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <Printer className="w-5 h-5 text-white" style={{ display: 'none' }} />
             </div>
             <span className="font-semibold text-slate-900 dark:text-white">Admin</span>
           </div>
@@ -182,6 +193,7 @@ export default function AdminDashboardPage() {
         {activeTab === 'products' && <ProductsManager products={products} categories={categories} onUpdate={fetchAllData} />}
         {activeTab === 'orders' && <OrdersManager orders={orders} onUpdate={fetchAllData} />}
         {activeTab === 'messages' && <MessagesManager messages={messages} onUpdate={fetchAllData} />}
+        {activeTab === 'validation' && <DataValidation />}
       </main>
     </div>
   );

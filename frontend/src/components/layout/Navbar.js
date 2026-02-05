@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
+import { useCustomerAuth } from '../../context/CustomerAuthContext';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { 
@@ -10,13 +11,17 @@ import {
   ShoppingCart, 
   Sun, 
   Moon, 
-  Globe
+  Globe,
+  User,
+  LogOut,
+  Package
 } from 'lucide-react';
 
 export const Navbar = () => {
   const { t, language, toggleLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { cartCount } = useCart();
+  const { customer, isCustomerAuthenticated, logoutCustomer } = useCustomerAuth();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -28,8 +33,12 @@ export const Navbar = () => {
   ];
 
   const isActive = (href) => {
-    if (href === '/') return location.pathname === '/';
-    if (href.startsWith('/#')) return location.pathname === '/' && location.hash === href.substring(1);
+    if (href === '/') {
+      return location.pathname === '/' && !location.hash;
+    }
+    if (href.startsWith('/#')) {
+      return location.pathname === '/' && location.hash === href.substring(1);
+    }
     return location.pathname.startsWith(href);
   };
 
@@ -170,6 +179,50 @@ export const Navbar = () => {
               </Button>
             </Link>
 
+            {/* Customer Auth */}
+            {isCustomerAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <Link to="/my-orders">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-slate-600 dark:text-slate-300"
+                    title="As Minhas Encomendas"
+                  >
+                    <Package className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-sm text-slate-600 dark:text-slate-300 hidden sm:block font-medium">
+                    {customer?.name}
+                  </span>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={logoutCustomer}
+                  className="h-9 w-9 text-slate-600 dark:text-slate-300"
+                  title="Logout"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Link to="/login">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-slate-600 dark:text-slate-300"
+                  title="Login"
+                >
+                  <User className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
+
             {/* Mobile Menu */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild className="md:hidden">
@@ -206,6 +259,54 @@ export const Navbar = () => {
                     >
                       {t('nav.admin')}
                     </Link>
+                    
+                    {/* Customer Auth in Mobile Menu */}
+                    {isCustomerAuthenticated ? (
+                      <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 mt-4 space-y-2">
+                        <Link
+                          to="/profile"
+                          onClick={() => setIsOpen(false)}
+                          className="px-4 py-3 rounded-lg text-base font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center"
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          O Meu Perfil
+                        </Link>
+                        <Link
+                          to="/my-orders"
+                          onClick={() => setIsOpen(false)}
+                          className="px-4 py-3 rounded-lg text-base font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center"
+                        >
+                          <Package className="h-4 w-4 mr-2" />
+                          As Minhas Encomendas
+                        </Link>
+                        <div className="flex items-center justify-between px-4 py-2">
+                          <span className="text-sm text-slate-600 dark:text-slate-300">
+                            {customer?.name}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              logoutCustomer();
+                              setIsOpen(false);
+                            }}
+                            className="text-slate-600 dark:text-slate-300"
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Logout
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Link
+                        to="/login"
+                        onClick={() => setIsOpen(false)}
+                        className="px-4 py-3 rounded-lg text-base font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-t border-slate-200 dark:border-slate-700 mt-4 flex items-center"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Login
+                      </Link>
+                    )}
                   </div>
                 </div>
               </SheetContent>

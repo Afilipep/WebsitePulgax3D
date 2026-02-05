@@ -5,10 +5,8 @@ import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
-import axios from 'axios';
 import { Search, Filter, ShoppingBag } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from '../api';
 
 export default function ProductsPage() {
   const { t, language } = useLanguage();
@@ -17,29 +15,53 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Fetching products and categories...');
+        
         const [productsRes, categoriesRes] = await Promise.all([
-          axios.get(`${API}/products`),
-          axios.get(`${API}/categories`)
+          api.getProducts(),
+          api.getCategories()
         ]);
-        setProducts(productsRes.data);
-        setCategories(categoriesRes.data);
+        
+        console.log('API Response - Products:', productsRes);
+        console.log('API Response - Categories:', categoriesRes);
+        
+        // Backend returns arrays directly, not wrapped in { data: ... }
+        const productsData = Array.isArray(productsRes) ? productsRes : [];
+        const categoriesData = Array.isArray(categoriesRes) ? categoriesRes : [];
+        
+        console.log('Processed - Products:', productsData.length, 'items');
+        console.log('Processed - Categories:', categoriesData.length, 'items');
+        
+        setProducts(productsData);
+        setCategories(categoriesData);
+        
       } catch (error) {
         console.error('Error fetching data:', error);
+        setError(error.message || 'Erro ao carregar produtos');
+        setProducts([]);
+        setCategories([]);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchData();
   }, []);
 
-  const filteredProducts = products.filter(product => {
+  // Safe filtering with fallback
+  const safeProducts = Array.isArray(products) ? products : [];
+  const filteredProducts = safeProducts.filter(product => {
     const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory;
     const name = language === 'pt' ? product.name_pt : product.name_en;
-    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = name && name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -117,11 +139,27 @@ export default function ProductsPage() {
                 </div>
               ))}
             </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <ShoppingBag className="w-16 h-16 mx-auto text-red-300 dark:text-red-600 mb-4" />
+              <p className="text-red-500 dark:text-red-400 text-lg mb-2">
+                {error}
+              </p>
+              <p className="text-slate-500 dark:text-slate-400 mb-4">
+                Verifique se o servidor está a funcionar e tente novamente.
+              </p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Tentar Novamente
+              </Button>
+            </div>
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16">
               <ShoppingBag className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
               <p className="text-slate-500 dark:text-slate-400 text-lg">
-                {t('products.noProducts')}
+                {products.length === 0 ? 'Nenhum produto disponível' : t('products.noProducts')}
               </p>
             </div>
           ) : (
