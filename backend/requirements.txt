@@ -7,6 +7,7 @@ python-multipart==0.0.6
 emails==0.6.0
 jinja2==3.1.2
 motor==3.3.2
+pymongo==4.6.1
 python-dotenv==1.0.0
 bcrypt==4.1.2
 PyJWT==2.8.0
