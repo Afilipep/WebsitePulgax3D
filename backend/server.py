@@ -661,6 +661,21 @@ async def get_stats(admin = Depends(get_current_admin)):
 async def root():
     return {"message": "Pulgax 3D Store API", "status": "running"}
 
+@api_router.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        await db.command("ping")
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "message": "Pulgax 3D Store API is running"
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=503, detail="Service unavailable")
+
 # Include the router in the main app
 app.include_router(api_router)
 
